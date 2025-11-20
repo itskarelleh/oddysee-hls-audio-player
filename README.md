@@ -12,5 +12,4 @@ migrated to HLS for audio streaming. Here's why:
 - 📊 **Quality tiers** (free/premium) from single infrastructure
 - 🌍 **Global scale** leveraging CDN edge caching
 
-HLS Audio makes implementing HLS audio streaming as simple as 
-using a regular HTML5 audio element.
+HLS Audio makes implementing HLS audio streaming as simple as using a regular HTML5 audio element.
