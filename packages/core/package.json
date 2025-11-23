@@ -1,0 +1,21 @@
+{
+  "name": "@hls-audio-player/core",
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "hls",
+    "http live streaming",
+    "hls audio only",
+    "hls audio player"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "description": "A library so you can get music and audio playing without the hassle of trying to learn HLS.",
+  "dependencies": {
+    "@types/hls.js": "^1.0.0",
+    "hls.js": "^1.6.15"
+  }
+}
