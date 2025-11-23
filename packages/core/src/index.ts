@@ -1,4 +1,4 @@
-export { AudioHLSPlayer } from './hls-audio-player';
+export { HLSAudioPlayer } from './hls-audio-player';
 export type { 
   PlayerConfig, 
   SourceOptions, 

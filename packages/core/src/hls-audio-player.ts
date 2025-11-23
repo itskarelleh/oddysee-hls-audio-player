@@ -3,7 +3,7 @@ import { PlayerConfig, SourceOptions, Track, QualityLevel, PlayerEvent, PlayerEr
 
 type EventCallback = (data?: any) => void;
 
-export class AudioHLSPlayer {
+export class HLSAudioPlayer {
     private hls: HLS;
     private audioElement: HTMLAudioElement;
     private config: PlayerConfig;

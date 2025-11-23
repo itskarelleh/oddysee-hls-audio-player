@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLS Audio Player - Basic Example</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 HLS Audio Player Demo</h1>
+        <p>Testing our beautiful API that wraps verbose HLS.js complexity!</p>
+        
+        <div class="player-controls">
+            <button id="playBtn" disabled>▶️ Play</button>
+            <button id="pauseBtn" disabled>⏸️ Pause</button>
+            <button id="loadBtn">📥 Load Stream</button>
+            <button id="headerBtn">🔐 Load with Headers</button>
+        </div>
+
+        <div class="volume-control">
+            <label for="volume">Volume:</label>
+            <input type="range" id="volume" min="0" max="100" value="100" disabled>
+        </div>
+
+        <div class="quality-control">
+            <label for="quality">Quality:</label>
+            <select id="quality" disabled>
+                <option value="">Auto</option>
+            </select>
+        </div>
+
+        <div class="stream-input">
+            <label for="streamUrl">Stream URL:</label>
+            <input type="text" id="streamUrl" 
+                   placeholder="https://example.com/stream.m3u8" 
+                   value="https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8">
+        </div>
+
+        <div class="status">
+            <h3>Status: <span id="status">Ready</span></h3>
+            <div id="currentTrack">No track loaded</div>
+            <div id="qualityLevels">No quality levels available</div>
+        </div>
+
+        <div class="events">
+            <h3>Events:</h3>
+            <div id="eventLog"></div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
