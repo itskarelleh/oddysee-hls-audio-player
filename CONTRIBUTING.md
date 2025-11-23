@@ -7,6 +7,15 @@
 
 We build an **elegant API that wraps verbose HLS.js complexity**. Every contribution should make audio streaming simpler, not add more complexity.
 
+## Getting Started
+Fork the repository
+
+Create a feature branch
+
+Follow our API patterns
+
+Submit a pull request
+
 ## Core Principles
 
 ### 1. Wrap, Don't Expose
@@ -126,15 +135,6 @@ Error mapping from HLS.js
 
 Audio-specific functionality
 
-Getting Started
-Fork the repository
 
-Create a feature branch
-
-Write tests first
-
-Follow our API patterns
-
-Submit a pull request
 
 Remember: We're making audio streaming simpler, not more complex!
