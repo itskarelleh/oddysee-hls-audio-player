@@ -22,6 +22,7 @@ class BasicPlayerApp {
 
         // Set up event listeners
         this.setupEventListeners();
+        this.setupCollapsibleEvents();
         
         this.logEvent('App initialized and ready');
         this.updateStatus('Ready to load stream');
@@ -40,24 +41,48 @@ class BasicPlayerApp {
 
     setupTestStreams() {
         const testStreams = [
-            'https://pl.streamingvideoprovider.com/mp3-playlist/playlist.m3u8', // MP3 audio HLS
-            'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', // Mux test audio
-            'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8', // Live test
-            'https://assets.afcdn.com/audio/20200916/2100k_aac.m3u8', // French radio
-            'http://stream.radioparadise.com/aac-320', // Radio Paradise (works as HLS)
+            {
+                url: 'https://pl.streamingvideoprovider.com/mp3-playlist/playlist.m3u8',
+                title: '🎵 MP3 Music Playlist',
+                description: 'Various MP3 tracks in HLS format'
+            },
+            {
+                url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+                title: '🔊 Mux Test Audio',
+                description: 'Standard HLS.js test stream'
+            },
+            {
+                url: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8',
+                title: '📡 Live Test Stream',
+                description: 'Live HLS stream for testing'
+            },
+            {
+                url: 'https://assets.afcdn.com/audio/20200916/2100k_aac.m3u8',
+                title: '🇫🇷 French Radio',
+                description: 'French audio stream example'
+            },
+            {
+                url: 'http://stream.radioparadise.com/aac-320',
+                title: '🌴 Radio Paradise',
+                description: 'Internet radio station'
+            }
         ];
+
         // Create quick load buttons for test streams
         const testContainer = document.createElement('div');
         testContainer.className = 'test-streams';
-        testContainer.innerHTML = '<h4>Test Streams:</h4>';
+        testContainer.innerHTML = '<h4>🎵 Test Streams (Click to Load):</h4>';
         
-        testStreams.forEach(url => {
+        testStreams.forEach(stream => {
             const btn = document.createElement('button');
-            btn.textContent = `Load: ${url.split('/').pop()}`;
+            btn.textContent = stream.title;
+            btn.title = `${stream.description}\nURL: ${stream.url}`;
             btn.style.fontSize = '12px';
-            btn.style.padding = '8px 12px';
+            btn.style.padding = '10px 14px';
+            btn.style.margin = '6px';
             btn.addEventListener('click', () => {
-                this.streamUrlInput.value = url;
+                this.streamUrlInput.value = stream.url;
+                this.currentStreamInfo = stream; // Store for display
                 this.loadStream();
             });
             testContainer.appendChild(btn);
@@ -75,7 +100,11 @@ class BasicPlayerApp {
 
         try {
             this.updateStatus('Loading stream...');
-            this.logEvent(`Loading stream: ${url}`);
+            
+            // Get stream title for logging
+            const streamTitle = this.getStreamTitle(url);
+            this.logEvent(`Loading stream: ${streamTitle}`);
+            this.logEvent(`URL: ${url}`);
 
             // Create player with basic config
             this.player = new HLSAudioPlayer();
@@ -84,13 +113,13 @@ class BasicPlayerApp {
             await this.player.setSource(url);
             
             this.updateStatus('Stream loaded successfully!');
-            this.logEvent('Stream loaded and ready to play');
+            this.logEvent(`✅ Now playing: ${streamTitle}`);
             this.updateControls(true);
-            this.updateTrackInfo();
+            this.updateTrackInfo(streamTitle);
             
         } catch (error) {
             this.updateStatus(`Error: ${error.message}`);
-            this.logEvent(`ERROR: ${error.message}`, 'error');
+            this.logEvent(`❌ ERROR: ${error.message}`, 'error');
             console.error('Stream load error:', error);
         }
     }
@@ -104,7 +133,10 @@ class BasicPlayerApp {
 
         try {
             this.updateStatus('Loading stream with headers...');
-            this.logEvent(`Loading stream with custom headers: ${url}`);
+            
+            const streamTitle = this.getStreamTitle(url);
+            this.logEvent(`Loading stream with custom headers: ${streamTitle}`);
+            this.logEvent(`URL: ${url}`);
 
             // Create player with header configuration
             this.player = new HLSAudioPlayer({
@@ -125,51 +157,73 @@ class BasicPlayerApp {
             });
             
             this.updateStatus('Stream with headers loaded!');
-            this.logEvent('Stream with custom headers loaded successfully');
-            this.logEvent('Headers sent: Authorization, User-Agent, X-Custom-Header, X-Request-ID');
+            this.logEvent(`✅ Now playing with headers: ${streamTitle}`);
+            this.logEvent('🔐 Headers sent: Authorization, User-Agent, X-Custom-Header, X-Request-ID');
             this.updateControls(true);
-            this.updateTrackInfo();
+            this.updateTrackInfo(streamTitle);
             
         } catch (error) {
             this.updateStatus(`Error: ${error.message}`);
-            this.logEvent(`ERROR: ${error.message}`, 'error');
+            this.logEvent(`❌ ERROR: ${error.message}`, 'error');
             console.error('Stream load error:', error);
         }
+    }
+
+    getStreamTitle(url) {
+        // Try to find in our predefined streams
+        const predefinedStreams = [
+            { url: 'https://pl.streamingvideoprovider.com/mp3-playlist/playlist.m3u8', title: 'MP3 Music Playlist' },
+            { url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', title: 'Mux Test Audio' },
+            { url: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8', title: 'Live Test Stream' },
+            { url: 'https://assets.afcdn.com/audio/20200916/2100k_aac.m3u8', title: 'French Radio' },
+            { url: 'http://stream.radioparadise.com/aac-320', title: 'Radio Paradise' }
+        ];
+
+        const stream = predefinedStreams.find(s => s.url === url);
+        if (stream) {
+            return stream.title;
+        }
+
+        // Fallback: extract from URL
+        const filename = url.split('/').pop() || url.split('/').slice(-2, -1)[0];
+        return filename.includes('.m3u8') ? filename : `${filename}.m3u8`;
     }
 
     setupPlayerEvents() {
         if (!this.player) return;
 
         this.player.on('play', () => {
-            this.logEvent('Playback started');
+            const streamTitle = this.getStreamTitle(this.streamUrlInput.value);
+            this.logEvent(`▶️ Playback started: ${streamTitle}`);
             this.updateStatus('Playing');
             this.playBtn.disabled = true;
             this.pauseBtn.disabled = false;
         });
 
         this.player.on('pause', () => {
-            this.logEvent('Playback paused');
+            const streamTitle = this.getStreamTitle(this.streamUrlInput.value);
+            this.logEvent(`⏸️ Playback paused: ${streamTitle}`);
             this.updateStatus('Paused');
             this.playBtn.disabled = false;
             this.pauseBtn.disabled = true;
         });
 
         this.player.on('track-end', () => {
-            this.logEvent('Track ended');
+            this.logEvent('⏹️ Track ended');
             this.updateStatus('Track completed');
         });
 
         this.player.on('playlist-ready', () => {
-            this.logEvent('Playlist parsed and ready');
+            this.logEvent('📋 Playlist parsed and ready');
             this.updateQualityControls();
         });
 
         this.player.on('quality-change', (quality) => {
-            this.logEvent(`Quality changed to: ${quality?.name || 'unknown'}`);
+            this.logEvent(`🎚️ Quality changed to: ${quality?.name || 'unknown'}`);
         });
 
         this.player.on('error', (error) => {
-            this.logEvent(`Player Error: ${error.code} - ${error.message}`, 'error');
+            this.logEvent(`❌ Player Error: ${error.code} - ${error.message}`, 'error');
             this.updateStatus(`Error: ${error.code}`);
         });
     }
@@ -189,7 +243,7 @@ class BasicPlayerApp {
     setVolume(volume) {
         if (this.player) {
             this.player.setVolume(volume);
-            this.logEvent(`Volume set to: ${Math.round(volume * 100)}%`);
+            this.logEvent(`🔊 Volume set to: ${Math.round(volume * 100)}%`);
         }
     }
 
@@ -200,10 +254,15 @@ class BasicPlayerApp {
         this.qualitySelect.disabled = !enabled;
     }
 
-    updateTrackInfo() {
+    updateTrackInfo(streamTitle = null) {
         if (this.player) {
             const track = this.player.getCurrentTrack();
-            this.currentTrackElement.textContent = `Current Track: ${track?.title || track?.url || 'Unknown'}`;
+            const displayTitle = streamTitle || track?.title || this.getStreamTitle(this.streamUrlInput.value);
+            this.currentTrackElement.textContent = `Now Playing: ${displayTitle}`;
+            
+            if (track?.url) {
+                this.currentTrackElement.innerHTML += `<br><small style="color: #888; font-size: 11px;">URL: ${track.url}</small>`;
+            }
         }
     }
 
@@ -211,13 +270,14 @@ class BasicPlayerApp {
         if (!this.player) return;
 
         const qualities = this.player.getQualityLevels();
-        this.qualityLevelsElement.textContent = `Available Qualities: ${qualities.length} levels`;
+        this.qualityLevelsElement.textContent = `Available Qualities: ${qualities.length} level${qualities.length !== 1 ? 's' : ''}`;
         
         this.qualitySelect.innerHTML = '<option value="">Auto</option>';
         qualities.forEach(quality => {
             const option = document.createElement('option');
             option.value = quality.id;
-            option.textContent = `${quality.name} (${Math.round(quality.bitrate / 1000)}kbps)`;
+            const bitrate = quality.bitrate ? Math.round(quality.bitrate / 1000) : '?';
+            option.textContent = `${quality.name} (${bitrate}kbps)`;
             this.qualitySelect.appendChild(option);
         });
 
@@ -225,8 +285,11 @@ class BasicPlayerApp {
             const value = e.target.value;
             if (value === '') {
                 this.player.setQuality(-1); // Auto
+                this.logEvent('🎚️ Quality set to: Auto');
             } else {
                 this.player.setQuality(parseInt(value));
+                const qualityName = this.qualitySelect.options[this.qualitySelect.selectedIndex].text;
+                this.logEvent(`🎚️ Quality set to: ${qualityName}`);
             }
         });
     }
@@ -245,13 +308,24 @@ class BasicPlayerApp {
         `;
         
         if (type === 'error') {
-            eventEntry.style.borderLeftColor = '#e53e3e';
+            eventEntry.style.borderLeftColor = '#ff6b6b';
         } else if (type === 'warning') {
-            eventEntry.style.borderLeftColor = '#dd6b20';
+            eventEntry.style.borderLeftColor = '#ffa94d';
         }
 
         this.eventLogElement.appendChild(eventEntry);
         this.eventLogElement.scrollTop = this.eventLogElement.scrollHeight;
+    }
+
+    setupCollapsibleEvents() {
+        this.eventsHeader = document.getElementById('eventsHeader');
+        this.eventsContainer = document.getElementById('eventsContainer');
+        this.eventsToggle = document.getElementById('eventsToggle');
+
+        this.eventsHeader.addEventListener('click', () => {
+            this.eventsContainer.classList.toggle('collapsed');
+            this.eventsToggle.classList.toggle('collapsed');
+        });
     }
 }
 
