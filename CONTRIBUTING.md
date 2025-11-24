@@ -1,6 +1,3 @@
-
-
-```markdown
 # Contributing to AudioHLS Player
 
 ## Our Philosophy
@@ -128,7 +125,6 @@ Testing Requirements
 All features must include tests for:
 
 Header merging behavior
-
 Configuration inheritance
 
 Error mapping from HLS.js
