@@ -1,0 +1,38 @@
+{
+  "name": "@hls-audio-player/core",
+  "version": "0.1.0",
+  "description": "A simple HLS audio player that wraps verbose HLS.js complexity into intuitive audio controls",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "hls",
+    "audio",
+    "player",
+    "streaming",
+    "music",
+    "podcast"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/hls-audio-player"
+  },
+  "dependencies": {
+    "@types/hls.js": "^1.0.0",
+    "hls.js": "^1.4.10"
+  },
+  "devDependencies": {
+    "tsup": "^7.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^0.32.0"
+  }
+}
