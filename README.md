@@ -44,6 +44,9 @@ const player = new HLSAudioPlayer({
 
 🛡️ TypeScript ready - Fully typed for autocomplete
 
+## Code of Conduct
+We expect all contributors to read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## FAQs
 **Q: What the heck is HLS?** <br/>
 A: HLS (HTTP Live Streaming) is a streaming protocol created by Apple back in 2009. It works by breaking down video and audio into small chunks and serving them progressively. It's become the industry standard for streaming due to it's adaptability and reliability compared to progressive download(MP3)
