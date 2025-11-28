@@ -4,6 +4,9 @@
 
 We build an **elegant API that wraps verbose HLS.js complexity**. Every contribution should make audio streaming simpler, not add more complexity.
 
+## Code of Conduct
+We expect all contributors to read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Getting Started
 Fork the repository
 
