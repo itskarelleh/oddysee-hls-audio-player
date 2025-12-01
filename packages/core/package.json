@@ -4,6 +4,9 @@
   "description": "A simple HLS audio player that wraps verbose HLS.js complexity into intuitive audio controls",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "author": "Karelle Hofler",
+  "license": "Apache-2.0",
+  "url": "https://github.com/itskarelleh/hls-audio-player",
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
@@ -18,14 +21,22 @@
     "player",
     "streaming",
     "music",
-    "podcast"
+    "podcast",
+    "hls support",
+    "audio player",
+    "utility",
+    "music player",
+    "audio controls",
+    "javascript",
+    "html5",
+    "web audio",
+    "hls javascript",
+    "hls.js wrapper",
+    "hls.js player",
+    "hls.js audio player",
+    "hls.js audio controls",
+    "hls.js audio player controls"
   ],
-  "author": "Your Name",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-username/hls-audio-player"
-  },
   "dependencies": {
     "@types/hls.js": "^1.0.0",
     "hls.js": "^1.4.10"

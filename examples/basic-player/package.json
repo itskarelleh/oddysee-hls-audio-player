@@ -14,5 +14,11 @@
   "keywords": [],
   "author": "",
   "license": "Apache-2.0",
-  "description": "The example basic player application for hls-audio-player-monorepo core package"
+  "description": "The example basic player application for hls-audio-player-monorepo core package",
+  "dependencies": {
+    "@hls-audio-player/core": "^0.1.0"
+  },
+  "files": [
+    "dist"
+  ]
 }

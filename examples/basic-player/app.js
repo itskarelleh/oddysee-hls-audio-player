@@ -1,4 +1,6 @@
-import { HLSAudioPlayer } from '../../packages/core/dist/index.mjs';
+// import { HLSAudioPlayer } from '../../packages/core/dist/index.mjs';
+import { HLSAudioPlayer } from '@hls-audio-player/core';
+
 
 class BasicPlayerApp {
     constructor() {
