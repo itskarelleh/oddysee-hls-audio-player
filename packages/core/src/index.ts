@@ -7,3 +7,4 @@ export type {
   PlayerEvent, 
   PlayerError 
 } from './types';
+export type { HLSAudioPlayerInterface } from './interface';

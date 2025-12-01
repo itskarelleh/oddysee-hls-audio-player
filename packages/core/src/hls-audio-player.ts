@@ -1,14 +1,29 @@
 import HLS, { type HlsConfig } from 'hls.js';
 import { PlayerConfig, SourceOptions, Track, QualityLevel, PlayerEvent, PlayerError } from './types';
+import type { HLSAudioPlayerInterface } from './interface';
 
 type EventCallback = (data?: any) => void;
 
-export class HLSAudioPlayer {
+export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private hls: HLS;
     private audioElement: HTMLAudioElement;
     private config: PlayerConfig;
     private eventListeners: Map<PlayerEvent, EventCallback[]> = new Map();
     private currentTrack?: Track;
+    private _loading: boolean = false;
+    private _error: PlayerError | null = null;
+
+    get loading(): boolean {
+        return this._loading;
+    }
+
+    get readyState(): number {
+        return this.audioElement.readyState;
+    }
+
+    get error(): PlayerError | null {
+        return this._error;
+    }
 
     constructor(config: PlayerConfig = {}) {
         this.config = config;
@@ -71,6 +86,25 @@ export class HLSAudioPlayer {
         this.audioElement.addEventListener('play', () => this.emit('play'));
         this.audioElement.addEventListener('pause', () => this.emit('pause'));
         this.audioElement.addEventListener('ended', () => this.emit('track-end'));
+        this.audioElement.addEventListener('loadedmetadata', () => {
+            this.updateCurrentTrack();
+            this.emit('loadedmetadata', this.currentTrack);
+        });
+        this.audioElement.addEventListener('timeupdate', () => {
+            this.updateCurrentTrack();
+            this.emit('timeupdate', this.currentTrack?.currentTime);
+        });
+        this.audioElement.addEventListener('canplay', () => {
+            this._loading = false;
+            this.emit('canplay');
+        });
+    }
+
+    private updateCurrentTrack(): void {
+        if (this.currentTrack) {
+            this.currentTrack.currentTime = this.audioElement.currentTime;
+            this.currentTrack.duration = this.audioElement.duration || undefined;
+        }
     }
 
     private mapHlsError(data: any): PlayerError {
@@ -80,12 +114,18 @@ export class HLSAudioPlayer {
                 return { code: 'NETWORK_ERROR', message: 'Network error occurred', details: data };
             case HLS.ErrorTypes.MEDIA_ERROR:
                 return { code: 'MEDIA_ERROR', message: 'Media error occurred', details: data };
+            case HLS.ErrorTypes.MUX_ERROR:
+                return { code: 'FORMAT_NOT_SUPPORTED', message: 'Format not supported', details: data };
             default:
                 return { code: 'UNKNOWN_ERROR', message: 'An unknown error occurred', details: data };
         }
     }
 
-    async setSource(url: string, options?: SourceOptions): Promise<void> {
+    async setSource(url: string, options?: SourceOptions): Promise<HLSAudioPlayer> {
+        this._loading = true;
+        this._error = null;
+        this.emit('loading');
+
         return new Promise((resolve, reject) => {
             // Destroy previous HLS instance if exists
             if (this.hls) {
@@ -109,30 +149,41 @@ export class HLSAudioPlayer {
             this.hls.attachMedia(this.audioElement);
 
             this.hls.on(HLS.Events.MANIFEST_PARSED, () => {
-                resolve();
+                resolve(this);
             });
 
             this.hls.on(HLS.Events.ERROR, (event, data) => {
-                reject(this.mapHlsError(data));
+                this._loading = false;
+                this._error = this.mapHlsError(data);
+                reject(this._error);
             });
 
             this.hls.loadSource(url);
-            this.currentTrack = { id: url, url, title: url.split('/').pop() };
+            this.currentTrack = { 
+                id: url, 
+                url, 
+                title: url.split('/').pop(),
+                currentTime: 0
+            };
         });
     }
 
-    play(): void {
+    play(): HLSAudioPlayer {
         this.audioElement.play().catch(error => {
-            this.emit('error', { code: 'PLAYBACK_ERROR', message: error.message });
+            this._error = { code: 'PLAYBACK_ERROR', message: error.message };
+            this.emit('error', this._error);
         });
+        return this;
     }
 
-    pause(): void {
+    pause(): HLSAudioPlayer {
         this.audioElement.pause();
+        return this;
     }
 
-    setVolume(volume: number): void {
+    setVolume(volume: number): HLSAudioPlayer {
         this.audioElement.volume = Math.max(0, Math.min(1, volume));
+        return this;
     }
 
     getVolume(): number {
@@ -170,16 +221,26 @@ export class HLSAudioPlayer {
         return 'low';
     }
 
-    getCurrentTrack(): Track | undefined {
-        return this.currentTrack;
+    getCurrentTrack(): Track | null {
+        this.updateCurrentTrack();
+        return this.currentTrack || null;
     }
 
-    // Event system
     on(event: PlayerEvent, callback: EventCallback): void {
         if (!this.eventListeners.has(event)) {
             this.eventListeners.set(event, []);
         }
         this.eventListeners.get(event)!.push(callback);
+    }
+
+    off(event: PlayerEvent, callback: EventCallback): void {
+        const listeners = this.eventListeners.get(event);
+        if (listeners) {
+            const index = listeners.indexOf(callback);
+            if (index > -1) {
+                listeners.splice(index, 1);
+            }
+        }
     }
 
     private emit(event: PlayerEvent, data?: any): void {
@@ -191,5 +252,7 @@ export class HLSAudioPlayer {
         this.hls.destroy();
         this.audioElement.remove();
         this.eventListeners.clear();
+        this._loading = false;
+        this._error = null;
     }
 }

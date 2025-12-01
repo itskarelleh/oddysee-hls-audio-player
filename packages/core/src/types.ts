@@ -27,6 +27,7 @@ export interface Track {
   title?: string;
   url: string;
   duration?: number;
+  currentTime: number;
 }
 
 export interface QualityLevel {
@@ -42,10 +43,14 @@ export type PlayerEvent =
   | 'track-end' 
   | 'error' 
   | 'quality-change' 
-  | 'playlist-ready';
+  | 'playlist-ready'
+  | 'loadedmetadata'
+  | 'timeupdate'
+  | 'loading'
+  | 'canplay';
 
 export interface PlayerError {
-  code: string;
+  code: 'NETWORK_ERROR' | 'MEDIA_ERROR' | 'PLAYBACK_ERROR' | 'FORMAT_NOT_SUPPORTED' | 'UNKNOWN_ERROR';
   message: string;
   details?: any;
 }

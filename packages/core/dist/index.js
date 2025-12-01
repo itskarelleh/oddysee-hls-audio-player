@@ -39,11 +39,22 @@ var import_hls = __toESM(require("hls.js"));
 var HLSAudioPlayer = class {
   constructor(config = {}) {
     this.eventListeners = /* @__PURE__ */ new Map();
+    this._loading = false;
+    this._error = null;
     this.config = config;
     this.audioElement = new Audio();
     this.hls = new import_hls.default(this.mapConfigToHLS(config));
     this.setupHlsEvents();
     this.setupAudioEvents();
+  }
+  get loading() {
+    return this._loading;
+  }
+  get readyState() {
+    return this.audioElement.readyState;
+  }
+  get error() {
+    return this._error;
   }
   mapConfigToHLS(config) {
     const hlsConfig = {
@@ -88,6 +99,24 @@ var HLSAudioPlayer = class {
     this.audioElement.addEventListener("play", () => this.emit("play"));
     this.audioElement.addEventListener("pause", () => this.emit("pause"));
     this.audioElement.addEventListener("ended", () => this.emit("track-end"));
+    this.audioElement.addEventListener("loadedmetadata", () => {
+      this.updateCurrentTrack();
+      this.emit("loadedmetadata", this.currentTrack);
+    });
+    this.audioElement.addEventListener("timeupdate", () => {
+      this.updateCurrentTrack();
+      this.emit("timeupdate", this.currentTrack?.currentTime);
+    });
+    this.audioElement.addEventListener("canplay", () => {
+      this._loading = false;
+      this.emit("canplay");
+    });
+  }
+  updateCurrentTrack() {
+    if (this.currentTrack) {
+      this.currentTrack.currentTime = this.audioElement.currentTime;
+      this.currentTrack.duration = this.audioElement.duration || void 0;
+    }
   }
   mapHlsError(data) {
     switch (data.type) {
@@ -95,11 +124,16 @@ var HLSAudioPlayer = class {
         return { code: "NETWORK_ERROR", message: "Network error occurred", details: data };
       case import_hls.default.ErrorTypes.MEDIA_ERROR:
         return { code: "MEDIA_ERROR", message: "Media error occurred", details: data };
+      case import_hls.default.ErrorTypes.MUX_ERROR:
+        return { code: "FORMAT_NOT_SUPPORTED", message: "Format not supported", details: data };
       default:
         return { code: "UNKNOWN_ERROR", message: "An unknown error occurred", details: data };
     }
   }
   async setSource(url, options) {
+    this._loading = true;
+    this._error = null;
+    this.emit("loading");
     return new Promise((resolve, reject) => {
       if (this.hls) {
         this.hls.destroy();
@@ -118,25 +152,36 @@ var HLSAudioPlayer = class {
       this.setupHlsEvents();
       this.hls.attachMedia(this.audioElement);
       this.hls.on(import_hls.default.Events.MANIFEST_PARSED, () => {
-        resolve();
+        resolve(this);
       });
       this.hls.on(import_hls.default.Events.ERROR, (event, data) => {
-        reject(this.mapHlsError(data));
+        this._loading = false;
+        this._error = this.mapHlsError(data);
+        reject(this._error);
       });
       this.hls.loadSource(url);
-      this.currentTrack = { id: url, url, title: url.split("/").pop() };
+      this.currentTrack = {
+        id: url,
+        url,
+        title: url.split("/").pop(),
+        currentTime: 0
+      };
     });
   }
   play() {
     this.audioElement.play().catch((error) => {
-      this.emit("error", { code: "PLAYBACK_ERROR", message: error.message });
+      this._error = { code: "PLAYBACK_ERROR", message: error.message };
+      this.emit("error", this._error);
     });
+    return this;
   }
   pause() {
     this.audioElement.pause();
+    return this;
   }
   setVolume(volume) {
     this.audioElement.volume = Math.max(0, Math.min(1, volume));
+    return this;
   }
   getVolume() {
     return this.audioElement.volume;
@@ -171,14 +216,23 @@ var HLSAudioPlayer = class {
     return "low";
   }
   getCurrentTrack() {
-    return this.currentTrack;
+    this.updateCurrentTrack();
+    return this.currentTrack || null;
   }
-  // Event system
   on(event, callback) {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
     this.eventListeners.get(event).push(callback);
+  }
+  off(event, callback) {
+    const listeners = this.eventListeners.get(event);
+    if (listeners) {
+      const index = listeners.indexOf(callback);
+      if (index > -1) {
+        listeners.splice(index, 1);
+      }
+    }
   }
   emit(event, data) {
     const listeners = this.eventListeners.get(event) || [];
@@ -188,6 +242,8 @@ var HLSAudioPlayer = class {
     this.hls.destroy();
     this.audioElement.remove();
     this.eventListeners.clear();
+    this._loading = false;
+    this._error = null;
   }
 };
 // Annotate the CommonJS export names for ESM import in node:
