@@ -2,10 +2,8 @@
 A library API that wraps around HLS.js for a better developer experience. Because audio streaming shouldn't require a PhD in streaming protocols.
 
 ## Background
-I built this because I needed an audio player that supported HLS, but everything out there was video-first with audio as an afterthought.
-
+I built this because I needed an audio player that supported HLS, but all the solutions I came across were either bloated or not maintained. 
 Then I discovered HLS.js. It saved me but it wasn't easy! The developer experience feels like you're configuring a spaceship when all you want to do is play some music.
-
 This library wraps all that complexity into a simple, audio-focused API that actually makes sense.
 
 ## Installation
