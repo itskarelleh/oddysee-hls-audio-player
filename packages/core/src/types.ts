@@ -38,6 +38,7 @@ export interface PlayerState {
   loading: boolean;
   error: PlayerError | null;
   readyState: number;
+  isPlaying: boolean;
 }
 
 export interface QualityLevel {

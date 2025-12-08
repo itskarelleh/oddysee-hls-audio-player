@@ -23,6 +23,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private currentTrack?: Track;
     private _loading: boolean = false;
     private _error: PlayerError | null = null;
+    private _isPlaying: boolean = false;
 
     get loading(): boolean {
         return this._loading;
@@ -34,6 +35,10 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
     get error(): PlayerError | null {
         return this._error;
+    }
+
+    get isPlaying(): boolean {
+        return this._isPlaying;
     }
 
     constructor(config: PlayerConfig = {}) {
@@ -94,12 +99,14 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     }
 
     private setupAudioEvents(): void {
-        this.audioElement.addEventListener('play', () =>
-            this.emit('play', undefined),
-        );
-        this.audioElement.addEventListener('pause', () =>
-            this.emit('pause', undefined),
-        );
+        this.audioElement.addEventListener('play', () => {
+            this._isPlaying = true;
+            this.emit('play', undefined);
+        });
+        this.audioElement.addEventListener('pause', () => {
+            this._isPlaying = false;
+            this.emit('pause', undefined);
+        });
         this.audioElement.addEventListener('ended', () =>
             this.emit('track-end', this.currentTrack || null),
         );
@@ -155,6 +162,12 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         this.emit('loading', undefined);
 
         return new Promise((resolve, reject) => {
+            // Pause current playback and reset audio element state
+            if (!this.audioElement.paused) {
+                this.audioElement.pause();
+            }
+            this.audioElement.currentTime = 0;
+            
             // Destroy previous HLS instance if exists
             if (this.hls) {
                 this.hls.destroy();
@@ -268,6 +281,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             loading: this.loading,
             error: this.error,
             readyState: this.readyState,
+            isPlaying: this.isPlaying,
         };
     }
 
@@ -358,5 +372,6 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         this.eventListeners.clear();
         this._loading = false;
         this._error = null;
+        this._isPlaying = false;
     }
 }

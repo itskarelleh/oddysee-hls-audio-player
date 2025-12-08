@@ -35,6 +35,7 @@ interface PlayerState {
     loading: boolean;
     error: PlayerError | null;
     readyState: number;
+    isPlaying: boolean;
 }
 interface QualityLevel {
     id: number;
@@ -89,9 +90,11 @@ declare class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private currentTrack?;
     private _loading;
     private _error;
+    private _isPlaying;
     get loading(): boolean;
     get readyState(): number;
     get error(): PlayerError | null;
+    get isPlaying(): boolean;
     constructor(config?: PlayerConfig);
     private mapConfigToHLS;
     private setupHlsEvents;
@@ -142,4 +145,4 @@ declare class HLSAudioPlayer implements HLSAudioPlayerInterface {
     destroy(): void;
 }
 
-export { HLSAudioPlayer, HLSAudioPlayerInterface, PlayerConfig, PlayerError, PlayerEvent, PlayerEventMap, QualityLevel, SourceOptions, Track };
+export { HLSAudioPlayer, HLSAudioPlayerInterface, PlayerConfig, PlayerError, PlayerEvent, PlayerEventMap, PlayerState, QualityLevel, SourceOptions, Track };

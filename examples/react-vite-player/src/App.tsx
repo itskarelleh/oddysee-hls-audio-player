@@ -5,25 +5,73 @@ import {
   Pause,
   Volume2,
   VolumeX,
+  SkipBack,
+  SkipForward,
 } from "lucide-react";
 import "./App.css";
 
 export default function App() {
-  const [url, setUrl] = useState(
-    "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-  );
+  const playlist = [
+    {
+      id: 1,
+        url: 'https://pl.streamingvideoprovider.com/mp3-playlist/playlist.m3u8',
+        title: '🎵 MP3 Music Playlist',
+        description: 'Various MP3 tracks in HLS format'
+    },
+    {
+      id: 2,
+        url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+        title: '🔊 Mux Test Audio',
+        description: 'Standard HLS.js test stream'
+    },
+    {
+      id: 3,
+        url: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8',
+        title: '📡 Live Test Stream',
+        description: 'Live HLS stream for testing'
+    },
+    {
+      id: 4,
+        url: 'https://assets.afcdn.com/audio/20200916/2100k_aac.m3u8',
+        title: '🇫🇷 French Radio',
+        description: 'French audio stream example'
+    },
+    {
+      id: 5,
+        url: 'http://stream.radioparadise.com/aac-320',
+        title: '🌴 Radio Paradise',
+        description: 'Internet radio station'
+    }
+  ];
 
-  const { state, controls } = useHlsAudioPlayer({
-    src: { url },
-    autoPlay: false,
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const currentTrack = playlist[currentTrackIndex];
+
+  const { state, controls, isLoading, isPlaying } = useHlsAudioPlayer({
+    src: { url: currentTrack.url },
+    autoPlay: true,
   });
 
   const togglePlay = () => {
-    if (state.playing) {
+    if (isPlaying) {
       controls.pause();
     } else {
       controls.play();
     }
+  };
+
+  const playTrack = (index: number) => {
+    setCurrentTrackIndex(index);
+  };
+
+  const playPrevious = () => {
+    const newIndex = currentTrackIndex === 0 ? playlist.length - 1 : currentTrackIndex - 1;
+    setCurrentTrackIndex(newIndex);
+  };
+
+  const playNext = () => {
+    const newIndex = (currentTrackIndex + 1) % playlist.length;
+    setCurrentTrackIndex(newIndex);
   };
 
   return (
@@ -37,43 +85,73 @@ export default function App() {
           Smooth audio from an HLS (.m3u8) stream
         </p>
 
-        {/* URL Input */}
-        <label className="text-xs uppercase tracking-wider text-teal-300 font-semibold">
-          Stream URL
-        </label>
-        <input
-          type="text"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          className="w-full mt-1 p-3 rounded-lg bg-black/30 border border-gray-700 text-gray-100 focus:ring-2 focus:ring-teal-400"
-        />
+        {/* Current Track Info */}
+        <div className="mb-6 p-4 bg-black/30 rounded-lg border border-gray-700">
+          <h2 className="text-lg font-semibold text-teal-300 mb-1">
+            {currentTrack.title}
+          </h2>
+          <p className="text-sm text-gray-400">
+            {currentTrack.description}
+          </p>
+        </div>
+
+        {/* Playlist */}
+        <div className="mb-6">
+          <label className="text-xs uppercase tracking-wider text-teal-300 font-semibold mb-2 block">
+            Playlist
+          </label>
+          <div className="max-h-32 overflow-y-auto bg-black/30 rounded-lg border border-gray-700">
+            {playlist.map((track, index) => (
+              <button
+                key={track.id}
+                onClick={() => playTrack(index)}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-b-0 ${
+                  index === currentTrackIndex ? 'bg-teal-900/30 text-teal-300' : 'text-gray-300'
+                }`}
+              >
+                <div className="font-medium">{track.title}</div>
+                <div className="text-xs text-gray-500">{track.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Player Controls */}
-        <div className="flex justify-center gap-4 mt-6">
+        <div className="flex justify-center items-center gap-3 mt-6">
           <button
-            onClick={() => controls.setSource(url)}
-            className="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600"
+            onClick={playPrevious}
+            className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors"
+            title="Previous track"
           >
-            Load
+            <SkipBack className="w-5 h-5 text-teal-300" />
           </button>
 
           <button
             onClick={togglePlay}
-            className="px-4 py-2 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full hover:from-gray-600"
-            disabled={state.loading}
+            className="p-3 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 transition-colors"
+            disabled={isLoading}
           >
-            {state ? (
-              <Play className="w-5 h-5 text-teal-300" />
+            {!isPlaying ? (
+              <Play className="w-6 h-6 text-teal-300" />
             ) : (
-              <Pause className="w-5 h-5 text-teal-300" />
+              <Pause className="w-6 h-6 text-teal-300" />
             )}
+          </button>
+
+          <button
+            onClick={playNext}
+            className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors"
+            title="Next track"
+          >
+            <SkipForward className="w-5 h-5 text-teal-300" />
           </button>
 
           <button
             onClick={() =>
               controls.setVolume(state.volume === 0 ? 1 : 0)
             }
-            className="px-3 py-2 rounded-md bg-gray-700 hover:bg-gray-600"
+            className="p-2 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors"
+            title="Toggle mute"
           >
             {state.volume === 0 ? (
               <VolumeX className="w-5 h-5 text-teal-300" />
@@ -91,7 +169,7 @@ export default function App() {
             max={state.duration ?? 0}
             value={state.currentTime}
             onChange={(e) =>
-              controls.seek(Number(e.target.value))
+              controls.setCurrentTime(Number(e.target.value))
             }
             className="w-full cursor-pointer accent-teal-300"
           />
@@ -125,7 +203,7 @@ export default function App() {
 
         {/* Status */}
         <div className="text-xs mt-4 text-gray-500 text-center">
-          {state.loading ? "Loading stream…" : "Ready"}
+          {isLoading ? "Loading stream…" : "Ready"}
         </div>
 
         {state.error && (

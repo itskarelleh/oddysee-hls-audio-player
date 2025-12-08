@@ -41,6 +41,7 @@ var HLSAudioPlayer = class {
     this.eventListeners = /* @__PURE__ */ new Map();
     this._loading = false;
     this._error = null;
+    this._isPlaying = false;
     this.config = config;
     this.audioElement = new Audio();
     this.hls = new import_hls.default(this.mapConfigToHLS(config));
@@ -55,6 +56,9 @@ var HLSAudioPlayer = class {
   }
   get error() {
     return this._error;
+  }
+  get isPlaying() {
+    return this._isPlaying;
   }
   mapConfigToHLS(config) {
     const hlsConfig = {
@@ -96,14 +100,14 @@ var HLSAudioPlayer = class {
     });
   }
   setupAudioEvents() {
-    this.audioElement.addEventListener(
-      "play",
-      () => this.emit("play", void 0)
-    );
-    this.audioElement.addEventListener(
-      "pause",
-      () => this.emit("pause", void 0)
-    );
+    this.audioElement.addEventListener("play", () => {
+      this._isPlaying = true;
+      this.emit("play", void 0);
+    });
+    this.audioElement.addEventListener("pause", () => {
+      this._isPlaying = false;
+      this.emit("pause", void 0);
+    });
     this.audioElement.addEventListener(
       "ended",
       () => this.emit("track-end", this.currentTrack || null)
@@ -153,6 +157,10 @@ var HLSAudioPlayer = class {
     this._error = null;
     this.emit("loading", void 0);
     return new Promise((resolve, reject) => {
+      if (!this.audioElement.paused) {
+        this.audioElement.pause();
+      }
+      this.audioElement.currentTime = 0;
       if (this.hls) {
         this.hls.destroy();
       }
@@ -247,7 +255,8 @@ var HLSAudioPlayer = class {
       volume: this.getVolume(),
       loading: this.loading,
       error: this.error,
-      readyState: this.readyState
+      readyState: this.readyState,
+      isPlaying: this.isPlaying
     };
   }
   getAudioElement() {
@@ -319,6 +328,7 @@ var HLSAudioPlayer = class {
     this.eventListeners.clear();
     this._loading = false;
     this._error = null;
+    this._isPlaying = false;
   }
 };
 // Annotate the CommonJS export names for ESM import in node:

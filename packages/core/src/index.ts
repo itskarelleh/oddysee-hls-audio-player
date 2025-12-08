@@ -6,6 +6,7 @@ export type {
   QualityLevel, 
   PlayerEvent, 
   PlayerError,
-  PlayerEventMap
+  PlayerEventMap,
+  PlayerState
 } from './types';
 export type { HLSAudioPlayerInterface } from './interface';

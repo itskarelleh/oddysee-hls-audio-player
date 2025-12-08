@@ -8,6 +8,7 @@ import {
   type PlayerError,
   type Track,
   type QualityLevel,
+  type PlayerState
 } from '@hls-audio-player/core'
 
 // Local mirror of the core's PlayerEventMap so we don't depend on it being exported
@@ -24,8 +25,6 @@ export type PlayerEventMap = {
   canplay: void
 }
 
-export type PlayerState = ReturnType<HLSAudioPlayer['getState']>
-
 export interface UseHlsAudioPlayerOptions {
   config?: PlayerConfig
   /** Optional initial source to load. */
@@ -41,6 +40,9 @@ export interface UseHlsAudioPlayerOptions {
 export interface UseHlsAudioPlayerResult {
   player: HLSAudioPlayerInterface | null
   state: PlayerState
+  isPlaying: boolean
+  duration: number
+  isLoading: boolean
   loading: boolean
   error: PlayerError | null
   readyState: number
@@ -65,6 +67,7 @@ const defaultState: PlayerState = {
   loading: false,
   error: null,
   readyState: 0,
+  isPlaying: false,
 }
 
 export function useHlsAudioPlayer(
@@ -85,6 +88,9 @@ export function useHlsAudioPlayer(
   const [loading, setLoading] = useState<boolean>(player.loading ?? false)
   const [error, setError] = useState<PlayerError | null>(player.error ?? null)
   const [readyState, setReadyState] = useState<number>(player.readyState ?? 0)
+  const [isPlaying, setIsPlaying] = useState<boolean>(player.isPlaying ?? false)
+  const [duration, setDuration] = useState<number>(player.getState()?.duration ?? 0)
+  const [isLoading, setIsLoading] = useState<boolean>(player.loading ?? false)
 
   // Wire core events into React state and user callbacks
   useEffect(() => {
@@ -94,6 +100,9 @@ export function useHlsAudioPlayer(
       setLoading(next.loading)
       setError(next.error)
       setReadyState(next.readyState)
+      setIsPlaying(next.isPlaying)
+      setDuration(next.duration ?? 0)
+      setIsLoading(next.loading)
     }
 
     const listeners: { [K in PlayerEvent]?: (data: PlayerEventMap[K]) => void } = {
@@ -229,6 +238,9 @@ export function useHlsAudioPlayer(
   return {
     player,
     state,
+    isPlaying,
+    duration,
+    isLoading,
     loading,
     error,
     readyState,
