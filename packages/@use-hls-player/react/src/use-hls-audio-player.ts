@@ -27,11 +27,8 @@ export type PlayerEventMap = {
 
 export interface UseHlsAudioPlayerOptions {
   config?: PlayerConfig
-  /** Optional initial source to load. */
   src?: { url: string; options?: SourceOptions }
-  /** If true, automatically call play() after the source is ready. */
   autoPlay?: boolean
-  /** Optional event callbacks that mirror the core player events. */
   on?: Partial<{
     [K in PlayerEvent]: (data: PlayerEventMap[K]) => void
   }>
@@ -84,7 +81,6 @@ export function useHlsAudioPlayer(
     () => player.getState() ?? defaultState,
   )
 
-  // Keep derived flags in sync
   const [loading, setLoading] = useState<boolean>(player.loading ?? false)
   const [error, setError] = useState<PlayerError | null>(player.error ?? null)
   const [readyState, setReadyState] = useState<number>(player.readyState ?? 0)
@@ -92,7 +88,6 @@ export function useHlsAudioPlayer(
   const [duration, setDuration] = useState<number>(player.getState()?.duration ?? 0)
   const [isLoading, setIsLoading] = useState<boolean>(player.loading ?? false)
 
-  // Wire core events into React state and user callbacks
   useEffect(() => {
     const handleStateChange = () => {
       const next = player.getState()
@@ -163,7 +158,6 @@ export function useHlsAudioPlayer(
     }
   }, [player, on])
 
-  // Initial source loading & optional autoplay
   useEffect(() => {
     let cancelled = false
 
@@ -179,7 +173,6 @@ export function useHlsAudioPlayer(
       })
       .catch((err: unknown) => {
         if (cancelled) return
-        // Error will already be pushed through the player's error event
         console.error('Failed to set HLS source', err)
       })
 
@@ -188,7 +181,6 @@ export function useHlsAudioPlayer(
     }
   }, [player, src?.url, src?.options, autoPlay])
 
-  // Destroy player on unmount
   useEffect(() => {
     return () => {
       player.destroy()

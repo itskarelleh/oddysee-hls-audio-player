@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ESNext",
+    "module": "ESNext", 
     "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
@@ -11,6 +11,6 @@
     "declarationMap": true,
     "jsx": "react-jsx"
   },
-  "include": ["src"],
+  "include": ["src/index.ts", "src/use-hls-audio-player.ts"],
   "exclude": ["dist", "node_modules"]
 }
