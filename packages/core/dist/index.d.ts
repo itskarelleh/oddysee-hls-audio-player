@@ -27,6 +27,15 @@ interface Track {
     duration?: number;
     currentTime: number;
 }
+interface PlayerState {
+    track: Track | null;
+    currentTime: number;
+    duration: number | null;
+    volume: number;
+    loading: boolean;
+    error: PlayerError | null;
+    readyState: number;
+}
 interface QualityLevel {
     id: number;
     name: string;
@@ -34,6 +43,21 @@ interface QualityLevel {
     audioCodec?: string;
 }
 type PlayerEvent = 'play' | 'pause' | 'track-end' | 'error' | 'quality-change' | 'playlist-ready' | 'loadedmetadata' | 'timeupdate' | 'loading' | 'canplay';
+interface PlayerEventMap {
+    play: void;
+    pause: void;
+    'track-end': Track | null;
+    error: PlayerError;
+    'quality-change': QualityLevel;
+    'playlist-ready': void;
+    loadedmetadata: Track | null;
+    timeupdate: {
+        currentTime: number;
+        duration: number | null;
+    };
+    loading: void;
+    canplay: void;
+}
 interface PlayerError {
     code: 'NETWORK_ERROR' | 'MEDIA_ERROR' | 'PLAYBACK_ERROR' | 'FORMAT_NOT_SUPPORTED' | 'UNKNOWN_ERROR';
     message: string;
@@ -43,17 +67,20 @@ interface PlayerError {
 interface HLSAudioPlayerInterface {
     setSource(url: string, options?: SourceOptions): Promise<HLSAudioPlayer>;
     getCurrentTrack(): Track | null;
-    on(event: PlayerEvent, callback: Function): void;
-    off(event: PlayerEvent, callback: Function): void;
+    on<K extends PlayerEvent>(event: K, callback: (data: PlayerEventMap[K]) => void): void;
+    off<K extends PlayerEvent>(event: K, callback: (data: PlayerEventMap[K]) => void): void;
     play(): HLSAudioPlayer;
+    playAsync(): Promise<HLSAudioPlayer>;
     pause(): HLSAudioPlayer;
     setVolume(volume: number): HLSAudioPlayer;
+    getState(): PlayerState;
+    getAudioElement(): HTMLAudioElement;
     loading: boolean;
     readyState: number;
     error: PlayerError | null;
+    destroy(): void;
 }
 
-type EventCallback = (data?: any) => void;
 declare class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private hls;
     private audioElement;
@@ -71,19 +98,48 @@ declare class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private setupAudioEvents;
     private updateCurrentTrack;
     private mapHlsError;
+    /**
+     * sets source of the player
+     * @param url
+     * @param options
+     * @returns
+     */
     setSource(url: string, options?: SourceOptions): Promise<HLSAudioPlayer>;
+    /**
+     * plays current source/track
+     * @returns
+     */
     play(): HLSAudioPlayer;
+    /**
+     * Plays the current source/track and returns a Promise so callers can
+     * await or chain then/catch (e.g. to handle autoplay errors explicitly).
+     */
+    playAsync(): Promise<HLSAudioPlayer>;
+    /**
+     * Pauses the current source/track
+     * @returns
+     */
     pause(): HLSAudioPlayer;
     setVolume(volume: number): HLSAudioPlayer;
+    /**
+     * Gets the current value of the volume
+     * @returns
+     */
     getVolume(): number;
+    /**
+    *
+    * gets the whole state of the player
+    */
+    getState(): PlayerState;
+    getAudioElement(): HTMLAudioElement;
     getQualityLevels(): QualityLevel[];
     setQuality(quality: number | string): void;
     private getQualityName;
     getCurrentTrack(): Track | null;
-    on(event: PlayerEvent, callback: EventCallback): void;
-    off(event: PlayerEvent, callback: EventCallback): void;
+    on<K extends PlayerEvent>(event: K, callback: (data: PlayerEventMap[K]) => void): void;
+    off<K extends PlayerEvent>(event: K, callback: (data: PlayerEventMap[K]) => void): void;
     private emit;
     destroy(): void;
 }
 
-export { HLSAudioPlayer, HLSAudioPlayerInterface, PlayerConfig, PlayerError, PlayerEvent, QualityLevel, SourceOptions, Track };
+export { HLSAudioPlayer, HLSAudioPlayerInterface, PlayerConfig, PlayerError, PlayerEvent, PlayerEventMap, QualityLevel, SourceOptions, Track };

@@ -66,5 +66,40 @@ A: This library is specifically for audio streaming as there are other libraries
 ## Contributing
 We welcome contributions! Whether you're fixing bugs, adding features, or improving documentation, check out our Contributing Guide.
 
+### Working with Verdaccio (local registry)
+If you want to test changes to `@hls-audio-player/core` locally before publishing to npm, you can use a local Verdaccio registry.
+
+1. **Start Verdaccio**
+   - Install Verdaccio globally (once):
+     ```bash
+     npm install -g verdaccio
+     ```
+   - Start the registry (defaults to `http://localhost:4873`):
+     ```bash
+     verdaccio
+     ```
+
+2. **Point npm to the local registry** (in a separate terminal):
+   ```bash
+   npm set registry http://localhost:4873
+   ```
+
+3. **Publish the local version** of this package to Verdaccio:
+   ```bash
+   cd packages/core
+   npm run build
+   npm publish --registry http://localhost:4873
+   ```
+
+4. **Install from Verdaccio** in a test app or another package:
+   ```bash
+   npm install @hls-audio-player/core --registry http://localhost:4873
+   ```
+
+5. **(Optional) Restore the default npm registry** when you're done:
+   ```bash
+   npm set registry https://registry.npmjs.org/
+   ```
+
 ## License
 Apache License 2.0

@@ -1,8 +1,19 @@
 import HLS, { type HlsConfig } from 'hls.js';
-import { PlayerConfig, SourceOptions, Track, QualityLevel, PlayerEvent, PlayerError } from './types';
+import {
+	PlayerConfig,
+	SourceOptions,
+	Track,
+	QualityLevel,
+	PlayerEvent,
+	PlayerError,
+	PlayerEventMap,
+	PlayerState,
+} from './types';
 import type { HLSAudioPlayerInterface } from './interface';
 
-type EventCallback = (data?: any) => void;
+type EventCallback<K extends PlayerEvent = PlayerEvent> = (
+	data: PlayerEventMap[K],
+) => void;
 
 export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private hls: HLS;
@@ -69,7 +80,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
     private setupHlsEvents(): void {
         this.hls.on(HLS.Events.MANIFEST_PARSED, () => {
-            this.emit('playlist-ready');
+            this.emit('playlist-ready', undefined);
         });
 
         this.hls.on(HLS.Events.ERROR, (event, data) => {
@@ -83,20 +94,31 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     }
 
     private setupAudioEvents(): void {
-        this.audioElement.addEventListener('play', () => this.emit('play'));
-        this.audioElement.addEventListener('pause', () => this.emit('pause'));
-        this.audioElement.addEventListener('ended', () => this.emit('track-end'));
+        this.audioElement.addEventListener('play', () =>
+            this.emit('play', undefined),
+        );
+        this.audioElement.addEventListener('pause', () =>
+            this.emit('pause', undefined),
+        );
+        this.audioElement.addEventListener('ended', () =>
+            this.emit('track-end', this.currentTrack || null),
+        );
         this.audioElement.addEventListener('loadedmetadata', () => {
             this.updateCurrentTrack();
-            this.emit('loadedmetadata', this.currentTrack);
+            this.emit('loadedmetadata', this.currentTrack || null);
         });
         this.audioElement.addEventListener('timeupdate', () => {
             this.updateCurrentTrack();
-            this.emit('timeupdate', this.currentTrack?.currentTime);
+            this.emit('timeupdate', {
+                currentTime: this.audioElement.currentTime,
+                duration: isNaN(this.audioElement.duration)
+                    ? null
+                    : this.audioElement.duration,
+            });
         });
         this.audioElement.addEventListener('canplay', () => {
             this._loading = false;
-            this.emit('canplay');
+            this.emit('canplay', undefined);
         });
     }
 
@@ -121,10 +143,16 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         }
     }
 
+    /**
+     * sets source of the player
+     * @param url 
+     * @param options 
+     * @returns 
+     */
     async setSource(url: string, options?: SourceOptions): Promise<HLSAudioPlayer> {
         this._loading = true;
         this._error = null;
-        this.emit('loading');
+        this.emit('loading', undefined);
 
         return new Promise((resolve, reject) => {
             // Destroy previous HLS instance if exists
@@ -168,26 +196,83 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         });
     }
 
+    /**
+     * plays current source/track 
+     * @returns 
+     */
     play(): HLSAudioPlayer {
-        this.audioElement.play().catch(error => {
-            this._error = { code: 'PLAYBACK_ERROR', message: error.message };
-            this.emit('error', this._error);
+        // Fire-and-forget version; errors are surfaced via the 'error' event
+        this.playAsync().catch(() => {
+            // Swallow here; consumer can listen to 'error' or use playAsync()
         });
         return this;
     }
 
+    /**
+     * Plays the current source/track and returns a Promise so callers can
+     * await or chain then/catch (e.g. to handle autoplay errors explicitly).
+     */
+    async playAsync(): Promise<HLSAudioPlayer> {
+        try {
+            await this.audioElement.play();
+            return this;
+        } catch (error: any) {
+            this._error = {
+                code: 'PLAYBACK_ERROR',
+                message: (error && error.message) || 'Playback failed',
+            };
+            this.emit('error', this._error);
+            throw this._error;
+        }
+    }
+
+    /**
+     * Pauses the current source/track
+     * @returns 
+     */
     pause(): HLSAudioPlayer {
         this.audioElement.pause();
         return this;
     }
 
+    /*
+    * sets volume of audio player   
+    */
     setVolume(volume: number): HLSAudioPlayer {
         this.audioElement.volume = Math.max(0, Math.min(1, volume));
         return this;
     }
 
+    /**
+     * Gets the current value of the volume
+     * @returns 
+     */
     getVolume(): number {
         return this.audioElement.volume;
+    }
+
+    /**
+    *
+    * gets the whole state of the player
+    */
+    getState(): PlayerState {
+        const track = this.getCurrentTrack();
+        return {
+            track,
+            currentTime: track?.currentTime ?? 0,
+            duration:
+                typeof track?.duration === 'number' && !isNaN(track.duration)
+                    ? track.duration
+                    : null,
+            volume: this.getVolume(),
+            loading: this.loading,
+            error: this.error,
+            readyState: this.readyState,
+        };
+    }
+
+    getAudioElement(): HTMLAudioElement {
+        return this.audioElement;
     }
 
     getQualityLevels(): QualityLevel[] {
@@ -226,31 +311,50 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         return this.currentTrack || null;
     }
 
-    on(event: PlayerEvent, callback: EventCallback): void {
+    on<K extends PlayerEvent>(
+        event: K,
+        callback: (data: PlayerEventMap[K]) => void,
+    ): void {
         if (!this.eventListeners.has(event)) {
             this.eventListeners.set(event, []);
         }
-        this.eventListeners.get(event)!.push(callback);
+        this.eventListeners.get(event)!.push(callback as EventCallback);
     }
 
-    off(event: PlayerEvent, callback: EventCallback): void {
+    off<K extends PlayerEvent>(
+        event: K,
+        callback: (data: PlayerEventMap[K]) => void,
+    ): void {
         const listeners = this.eventListeners.get(event);
         if (listeners) {
-            const index = listeners.indexOf(callback);
+            const index = listeners.indexOf(callback as EventCallback);
             if (index > -1) {
                 listeners.splice(index, 1);
             }
         }
     }
 
-    private emit(event: PlayerEvent, data?: any): void {
+    private emit<K extends PlayerEvent>(
+        event: K,
+        data: PlayerEventMap[K],
+    ): void {
         const listeners = this.eventListeners.get(event) || [];
-        listeners.forEach(callback => callback(data));
+        listeners.forEach(callback =>
+            (callback as EventCallback<K>)(data),
+        );
     }
 
     destroy(): void {
-        this.hls.destroy();
-        this.audioElement.remove();
+        try {
+            this.hls.destroy();
+        } catch {
+            // ignore if already destroyed
+        }
+        try {
+            this.audioElement.remove();
+        } catch {
+            // ignore if already removed
+        }
         this.eventListeners.clear();
         this._loading = false;
         this._error = null;
