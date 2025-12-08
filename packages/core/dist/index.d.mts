@@ -81,7 +81,6 @@ interface HLSAudioPlayerInterface {
     error: PlayerError | null;
     destroy(): void;
 }
-
 declare class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private hls;
     private audioElement;

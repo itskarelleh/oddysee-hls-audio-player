@@ -1,4 +1,4 @@
-export { HLSAudioPlayer } from './hls-audio-player';
+export { HLSAudioPlayer, HLSAudioPlayerInterface } from './hls-audio-player';
 export type { 
   PlayerConfig, 
   SourceOptions, 
@@ -7,5 +7,5 @@ export type {
   PlayerEvent, 
   PlayerError,
   PlayerEventMap,
-  PlayerState
+  PlayerState,
 } from './types';

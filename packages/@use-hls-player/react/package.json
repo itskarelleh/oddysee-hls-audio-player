@@ -21,7 +21,7 @@
     "pub:test": "npm run build && npm publish --tag test"
   },
   "dependencies": {
-    "@hls-audio-player/core": "^0.1.2-test",
+    "@hls-audio-player/core": "^0.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
