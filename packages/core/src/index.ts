@@ -9,4 +9,3 @@ export type {
   PlayerEventMap,
   PlayerState
 } from './types';
-export type { HLSAudioPlayerInterface } from './interface';
