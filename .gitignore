@@ -1,2 +1,5 @@
 node_modules
 verdaccio
+
+dist/
+packages/*/dist/
