@@ -8,13 +8,10 @@ We build an **elegant API that wraps verbose HLS.js complexity**. Every contribu
 We expect all contributors to read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Getting Started
-Fork the repository
-
-Create a feature branch
-
-Follow our API patterns
-
-Submit a pull request
+1. Fork the repository
+2. Create a feature branch
+3. Follow our API patterns
+4. Submit a pull request
 
 ## Core Principles
 
@@ -25,8 +22,10 @@ player.setSource(url)
 
 // ❌ DON'T: Expose raw HLS.js
 player.hls.loadSource(url)
-2. Simple → Powerful
-typescript
+```
+### 2. Simple → Powerful
+
+```typescript
 // Simple for common cases
 player.setSource(url).play()
 
@@ -36,15 +35,12 @@ player.setSource(url, {
   quality: 'high'
 })
 ```
-3. Audio-First Thinking
+### 3. Audio-First Thinking
 Focus on audio-specific features:
 
 - Crossfade between tracks
-
 - Volume normalization
-
 - Audio quality switching
-
 - Stream authentication
 
 ### Development Patterns
@@ -79,7 +75,6 @@ interface PlayerConfig {
 }
 ```
 
-// Method-level overrides merge with global config
 Header Management
 ```typescript
 // All network methods should support headers
@@ -91,26 +86,21 @@ const finalHeaders = {
   ...methodOptions.headers // Method overrides global
 };
 ```
-HLS.js Integration Guide
-What We Abstract
-Media element management
+## HLS.js Integration Guide
 
-Complex event handling
-
-Buffer configuration
-
-Quality level management
+### What We Abstract
+- Media element management
+- Complex event handling
+- Buffer configuration
+- Quality level management
 
 What We Keep Simple
-Audio stream loading
+- Audio stream loading
+- Playback controls
+- Error handling
+- Quality switching
 
-Playback controls
-
-Error handling
-
-Quality switching
-
-Example: Wrapping HLS.js Events
+### Example: Wrapping HLS.js Events
 ```typescript
 // Hide HLS.js event complexity
 private setupHlsEvents() {
@@ -124,15 +114,13 @@ private setupHlsEvents() {
 }
 ```
 
-Testing Requirements
+## Testing Requirements
 All features must include tests for:
 
-Header merging behavior
-Configuration inheritance
-
-Error mapping from HLS.js
-
-Audio-specific functionality
+- Header merging behavior
+- Configuration inheritance
+- Error mapping from HLS.js
+- Audio-specific functionality
 
 
 
