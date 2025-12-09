@@ -1,4 +1,4 @@
-# Contributing to AudioHLS Player
+# Contributing to HLS Audio Player
 
 ## Our Philosophy
 
