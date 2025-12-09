@@ -1,6 +1,6 @@
-# HLS Audio Player - React TypeScript Vite Example
+# Oddysee HLS Audio Player - React TypeScript Vite Example
 
-A simple demo showing how to use the `@use-hls-player/react` package.
+A simple demo showing how to use the `oddysee-react` package.
 
 ## Features Demonstrated
 

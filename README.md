@@ -1,4 +1,4 @@
-# HLS Audio Player
+# Oddysee - HLS Audio Player
 A library API that wraps around HLS.js for a better developer experience. Because audio streaming shouldn't require a PhD in streaming protocols.
 
 ## Background
@@ -8,26 +8,26 @@ This library wraps all that complexity into a simple, audio-focused API that act
 
 ## Packages
 
-- **[@hls-audio-player/core](./packages/@hls-audio-player/core/README.md)** - Core player library (framework-agnostic)
-- **[@hls-audio-player/react](./packages/@hls-audio-player/react/README.md)** - React hooks wrapper
+- **[oddysee-typescript](./packages/oddysee/core/README.md)** - Core player library (framework-agnostic)
+- **[oddysee-react](./packages/oddysee/react/README.md)** - React hooks wrapper
 
 ## Installation
 
 ### Core (Vanilla JS, or any framework)
 ```bash
-npm install @hls-audio-player/core
+npm install oddysee-typescript
 ```
 
 ### React Hook
 ```bash
-npm install @hls-audio-player/react
+npm install oddysee-react
 ```
 
 ## Quick Start
 
 ### Vanilla JavaScript
 ```typescript
-import { HLSAudioPlayer } from '@hls-audio-player/core';
+import { HLSAudioPlayer } from 'oddysee-typescript';
 
 // Simple usage - because it should be this easy
 const player = new HLSAudioPlayer();
@@ -43,7 +43,7 @@ player.on('timeupdate', ({ currentTime, duration }) => {
 
 ### React
 ```typescript
-import { useHlsAudioPlayer } from '@hls-audio-player/react';
+import { useHlsAudioPlayer } from 'oddysee-react';
 
 function AudioPlayer() {
   const { controls, state } = useHlsAudioPlayer({
@@ -90,8 +90,8 @@ const player = new HLSAudioPlayer({
 ## API Documentation
 
 See detailed documentation for each package:
-- [Core API Documentation](./packages/core/README.md)
-- [React Hook Documentation](./packages/react/README.md)
+- [Core API Documentation](./packages/oddysee/typescript/README.md)
+- [React Hook Documentation](./packages/oddysee/react/README.md)
 
 ## FAQs
 
@@ -129,7 +129,7 @@ howler.js
 Video-first / adaptive streaming: If you need more advanced streaming capabilities beyond HLS audio, a video library like video.js
  with HLS plugins might work, but it’s overkill for audio-only use cases.
 
-⚠️ Pro tip: Most “all-in-one” audio players don’t handle HLS streaming properly — that’s why HLS-specific solutions are rare. If your goal is segmented streaming, @hls-audio-player/core is designed for exactly that.
+⚠️ Pro tip: Most “all-in-one” audio players don’t handle HLS streaming properly — that’s why HLS-specific solutions are rare. If your goal is segmented streaming, Oddysee is designed for exactly that.
 
 **If none of that worked and you're sure you need an audio only solution for your hls audio, open an issue and we'll help you out 😊**
 
@@ -155,8 +155,8 @@ We welcome contributions! Whether you're fixing bugs, adding features, or improv
 
 1. Clone the repo
    ```bash
-   git clone https://github.com/itskarelleh/hls-audio-player-ts.git
-   cd hls-audio-player-ts
+   git clone https://github.com/itskarelleh/oddysee-hls-audio-player.git
+   cd oddysee-hls-audio-player
    ```
 
 2. Install dependencies
@@ -186,7 +186,7 @@ If you want to test changes locally before publishing to npm:
 
 3. **Publish locally**
    ```bash
-   cd packages/core
+   cd packages/oddysee-typescript
    npm run build
    npm publish
    ```

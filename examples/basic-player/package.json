@@ -1,5 +1,5 @@
 {
-  "name": "@hls-audio-player/basic-example",
+  "name": "@oddysee/basic-example",
   "version": "1.0.0",
   "type": "module",
   "main": "app.js",
@@ -14,9 +14,9 @@
   "keywords": [],
   "author": "",
   "license": "Apache-2.0",
-  "description": "The example basic player application for hls-audio-player-monorepo core package",
+  "description": "The example basic player application for Oddysee HLS Audio core package",
   "dependencies": {
-    "@hls-audio-player/core": "^0.1.0"
+    "oddysee-typescript": "^0.1.0"
   },
   "files": [
     "dist"

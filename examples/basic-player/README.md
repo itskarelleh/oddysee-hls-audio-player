@@ -1,6 +1,6 @@
 # HLS Audio Player - Basic Example
 
-A simple demo showing how to use the `@hls-audio-player/core` package.
+A simple demo showing how to use the `oddysee-typescript` package.
 
 ## Features Demonstrated
 

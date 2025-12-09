@@ -1,11 +1,16 @@
 {
-  "name": "@hls-audio-player/react",
+  "name": "oddysee-react",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "version": "0.1.0",
   "type": "module",
   "author": "Karelle Hofler",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": "https://github.com/itskarelleh/oddysee-hls-audio-player",
+  "license": "MIT",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -21,7 +26,7 @@
     "pub:test": "npm run build && npm publish --tag test"
   },
   "dependencies": {
-    "@hls-audio-player/core": "^0.1.0",
+    "oddysee-typescript": "^0.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

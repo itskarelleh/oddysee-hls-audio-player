@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useHlsAudioPlayer } from "@use-hls-player/react";
+import { useHlsAudioPlayer } from "oddysee-react";
 import {
   Play,
   Pause,

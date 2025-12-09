@@ -34,7 +34,7 @@ Describe the performance problem you're experiencing.
 
 ## Code Sample
 ```typescript
-import { HLSAudioPlayer } from '@hls-audio-player/core';
+import { HLSAudioPlayer } from 'oddysee-typescript';
 
 // Your configuration and usage
 const player = new HLSAudioPlayer({

@@ -1,21 +1,21 @@
-# @use-hls-player/react
+# Oddysee React
 
 A React hook that provides a simple, intuitive interface for HLS audio streaming using the core HLS audio player.
 
 ## Installation
 
 ```bash
-npm install @use-hls-player/react
+npm install oddysee-react
 # or
-yarn add @use-hls-player/react
+yarn add oddysee-react
 # or
-pnpm add @use-hls-player/react
+pnpm add oddysee-react
 ```
 
 ## Quick Start
 
 ```tsx
-import { useHlsAudioPlayer } from '@use-hls-player/react';
+import { useHlsAudioPlayer } from 'oddysee-react';
 
 function AudioPlayer() {
   const { state, controls, isLoading, isPlaying } = useHlsAudioPlayer({
@@ -129,7 +129,7 @@ interface SourceOptions {
 ### Basic Audio Player
 
 ```tsx
-import { useHlsAudioPlayer } from '@use-hls-player/react';
+import { useHlsAudioPlayer } from 'oddysee-react';
 
 export default function BasicPlayer() {
   const { state, controls, isLoading, isPlaying } = useHlsAudioPlayer({
@@ -185,7 +185,7 @@ export default function BasicPlayer() {
 
 ```tsx
 import { useState } from 'react';
-import { useHlsAudioPlayer } from '@use-hls-player/react';
+import { useHlsAudioPlayer } from 'oddysee-react';
 
 const playlist = [
   { id: 1, url: 'https://pl.streamingvideoprovider.com/mp3-playlist/playlist.m3u8', title: 'Music Playlist' },
@@ -254,7 +254,7 @@ export default function PlaylistPlayer() {
 ### Advanced Configuration with Headers
 
 ```tsx
-import { useHlsAudioPlayer } from '@use-hls-player/react';
+import { useHlsAudioPlayer } from 'oddysee-react';
 
 export default function AuthenticatedPlayer() {
   const { state, controls, isLoading } = useHlsAudioPlayer({
@@ -299,7 +299,7 @@ export default function AuthenticatedPlayer() {
 
 ```tsx
 import { useState } from 'react';
-import { useHlsAudioPlayer } from '@use-hls-player/react';
+import { useHlsAudioPlayer } from 'oddysee-react';
 
 export default function EventHandlingPlayer() {
   const [events, setEvents] = useState<string[]>([]);
@@ -349,7 +349,7 @@ export default function EventHandlingPlayer() {
 ## Dependencies
 
 - React 18+
-- @hls-audio-player/core (peer dependency)
+- oddysee-typescript (peer dependency)
 
 ## License
 
