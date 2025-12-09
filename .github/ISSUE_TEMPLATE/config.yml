@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and Discussion
+    url: https://github.com/itskarelleh/hls-audio-player-ts/discussions
+    about: Use GitHub Discussions for questions, ideas, and general discussion
+  - name: Security Issues
+    url: https://github.com/itskarelleh/hls-audio-player-ts/security/policy
+    about: For security vulnerabilities, please follow our security policy
