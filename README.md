@@ -113,6 +113,32 @@ A: This library is specifically for audio streaming. There are other excellent l
 **Q: Does this support live streams?**  
 A: Yes! HLS handles both live streams and on-demand audio. Just point it at your `.m3u8` playlist URL.
 
+**Q: I installed this and it’s not working. What’s up?**
+A: Don’t worry, this is a common question! Here’s what to check:
+
+HLS Only: This player is built specifically for HLS streams (.m3u8 files). It won’t work with regular audio files like MP3 or WAV.
+
+Progressive Audio: If you’re trying to play a standard audio file, you’ll need a different solution. Here are some options:
+
+react-use-audio-player
+ – lightweight, React-friendly, great for MP3/WAV.
+
+howler.js
+ – supports multiple formats, fades, and more advanced features. (Still functional despite last being updated a couple of years ago.)
+
+Video-first / adaptive streaming: If you need more advanced streaming capabilities beyond HLS audio, a video library like video.js
+ with HLS plugins might work, but it’s overkill for audio-only use cases.
+
+⚠️ Pro tip: Most “all-in-one” audio players don’t handle HLS streaming properly — that’s why HLS-specific solutions are rare. If your goal is segmented streaming, @hls-audio-player/core is designed for exactly that.
+
+**If none of that worked and you're sure you need an audio only solution for your hls audio, open an issue and we'll help you out 😊**
+
+## Origin Story
+
+This library exists because of a classic developer “what just happened?!” moment: SoundCloud rolled out a security update, and suddenly nothing was working anymore. MP3s, WAVs — all the usual endpoints were busted. The only thing that still worked was the HLS/AAC streams (.m3u8).
+
+So… we did what any reasonable, slightly stubborn developer would do: built a fully typed, framework-agnostic HLS audio player that just works. No fuss, no juggling 50+ HLS.js events, just play your audio and ship features.
+
 ## Browser Support
 
 Works in all modern browsers that support:
