@@ -8,8 +8,8 @@ This library wraps all that complexity into a simple, audio-focused API that act
 
 ## Packages
 
-- **[@hls-audio-player/core](./packages/core)** - Core player library (framework-agnostic)
-- **[@hls-audio-player/react](./packages/react)** - React hooks wrapper
+- **[@hls-audio-player/core](./packages/@hls-audio-player/core/README.md)** - Core player library (framework-agnostic)
+- **[@hls-audio-player/react](./packages/@hls-audio-player/react/README.md)** - React hooks wrapper
 
 ## Installation
 
