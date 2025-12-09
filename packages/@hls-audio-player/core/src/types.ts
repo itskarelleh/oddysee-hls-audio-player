@@ -27,6 +27,18 @@ export interface Track {
   title?: string;
   url: string;
   duration?: number;
+  currentTime: number;
+}
+
+export interface PlayerState {
+  track: Track | null;
+  currentTime: number;
+  duration: number | null;
+  volume: number;
+  loading: boolean;
+  error: PlayerError | null;
+  readyState: number;
+  isPlaying: boolean;
 }
 
 export interface QualityLevel {
@@ -42,11 +54,27 @@ export type PlayerEvent =
   | 'track-end' 
   | 'error' 
   | 'quality-change' 
-  | 'playlist-ready';
+  | 'playlist-ready'
+  | 'loadedmetadata'
+  | 'timeupdate'
+  | 'loading'
+  | 'canplay';
+
+export interface PlayerEventMap {
+  play: void;
+  pause: void;
+  'track-end': Track | null;
+  error: PlayerError;
+  'quality-change': QualityLevel;
+  'playlist-ready': void;
+  loadedmetadata: Track | null;
+  timeupdate: { currentTime: number; duration: number | null };
+  loading: void;
+  canplay: void;
+}
 
 export interface PlayerError {
-  code: string;
+  code: 'NETWORK_ERROR' | 'MEDIA_ERROR' | 'PLAYBACK_ERROR' | 'FORMAT_NOT_SUPPORTED' | 'UNKNOWN_ERROR';
   message: string;
   details?: any;
 }
-
