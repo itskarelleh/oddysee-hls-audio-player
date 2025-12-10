@@ -4,12 +4,15 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "author": "Karelle Hofler",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "repository": "https://github.com/itskarelleh/oddysee-hls-audio-player",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/itskarelleh/oddysee-hls-audio-player.git"
+  },
   "license": "MIT",
   "exports": {
     ".": {
