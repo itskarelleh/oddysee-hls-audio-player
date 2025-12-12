@@ -135,9 +135,9 @@ Video-first / adaptive streaming: If you need more advanced streaming capabiliti
 
 ## Origin Story
 
-This library exists because of a classic developer “what just happened?!” moment: SoundCloud rolled out a security update, and suddenly nothing was working anymore. MP3s, WAVs — all the usual endpoints were busted. The only thing that still worked was the HLS/AAC streams (.m3u8).
+This library exists because of a classic developer “what just happened?!” moment: SoundCloud rolled out an update, and suddenly nothing was working anymore. MP3s, WAVs — all the usual endpoints were busted. The only thing that still worked was the HLS/AAC streams (.m3u8).
 
-So… we did what any reasonable, slightly stubborn developer would do: built a fully typed, framework-agnostic HLS audio player that just works. No fuss, no juggling 50+ HLS.js events, just play your audio and ship features.
+So we did what any reasonable, slightly stubborn developer would do: built a fully typed, framework-agnostic HLS audio player that just works. No fuss, no juggling 50+ HLS.js events, just play your audio and ship features.
 
 ## Browser Support
 
@@ -202,7 +202,7 @@ We expect all contributors to read and follow our [Code of Conduct](CODE_OF_COND
 
 ## License
 
-Apache License 2.0 - see [LICENSE](LICENSE) for details.
+MIT - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
