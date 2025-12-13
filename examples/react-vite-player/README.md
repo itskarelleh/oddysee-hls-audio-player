@@ -2,8 +2,7 @@
 
 A simple demo showing how to use the <a href="https://github.com/itskarelleh/oddysee-hls-audio-player/blob/main/packages/oddysee/react/README.md">oddysee-react</a> package.
 
-Try it out here on  <a href="https://stackblitz.com/github/itskarelleh/oddysee-hls-audio-player/tree/main/examples/react-vite-player
-">StackBlitz</a>
+Try it out here on  <a href="https://stackblitz.com/github/itskarelleh/oddysee-hls-audio-player/tree/main/examples/react-vite-player">StackBlitz</a>
 
 ## Features Demonstrated
 
