@@ -1,24 +1,17 @@
 {
-  "name": "@oddysee/basic-example",
-  "version": "1.0.0",
+  "name": "vanilla-player",
+  "private": true,
+  "version": "0.0.0",
   "type": "module",
-  "main": "app.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
-  "devDependencies": {
-    "vite": "^4.4.0"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "Apache-2.0",
-  "description": "The example basic player application for Oddysee HLS Audio core package",
   "dependencies": {
-    "oddysee-typescript": "^0.1.0"
+    "oddysee-typescript": "^0.1.1"
   },
-  "files": [
-    "dist"
-  ]
+  "devDependencies": {
+    "vite": "^7.2.4"
+  }
 }
