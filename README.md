@@ -1,6 +1,9 @@
 # Oddysee - HLS Audio Player
 A library API that wraps around HLS.js for a better developer experience. Because audio streaming shouldn't require a PhD in streaming protocols.
 
+## ⚠️ Status: Beta
+Oddysee is actively evolving. APIs may change, and breaking changes can occur between minor releases.
+
 ## Background
 I built this because I needed an audio player that supported HLS, but all the solutions I came across were either bloated or not maintained. 
 Then I discovered HLS.js. It saved me but it wasn't easy! The developer experience feels like you're configuring a spaceship when all you want to do is play some music.
