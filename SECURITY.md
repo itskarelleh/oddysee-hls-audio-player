@@ -14,7 +14,7 @@ Security updates are provided **only for the latest 0.1.x release**.
 If you discover a security vulnerability, please report it privately.
 
 **How to report:**
-- Open a GitHub Security Advisory (preferred if available)
+- Open a GitHub Security Advisory 
 
 Please include:
 - A description of the issue
