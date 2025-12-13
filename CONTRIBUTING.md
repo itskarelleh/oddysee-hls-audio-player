@@ -10,7 +10,7 @@ We expect all contributors to read and follow our [Code of Conduct](CODE_OF_COND
 ## Getting Started
 1. Fork the repository
 2. Create a feature branch
-3. Follow our API patterns
+3. Follow our API patterns and/or the suggestions and steps provided by the issue assigned to you. 
 4. Submit a pull request
 
 ## Core Principles
@@ -121,7 +121,5 @@ All features must include tests for:
 - Configuration inheritance
 - Error mapping from HLS.js
 - Audio-specific functionality
-
-
 
 Remember: We're making audio streaming simpler, not more complex!
