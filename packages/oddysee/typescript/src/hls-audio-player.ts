@@ -27,6 +27,9 @@ export interface HLSAudioPlayerInterface {
 	playAsync(): Promise<HLSAudioPlayer>;
 	pause(): HLSAudioPlayer;
 	setVolume(volume: number): HLSAudioPlayer;
+    beginSeek(): void;
+    updateSeek(time: number): void;
+    commitSeek(): void
 
 	getState(): PlayerState;
 	getAudioElement(): HTMLAudioElement;
@@ -51,6 +54,8 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private _loading: boolean = false;
     private _error: PlayerError | null = null;
     private _isPlaying: boolean = false;
+    private isSeeking: boolean = false;
+    private seekPreviewTime: number | null = null;
 
     get loading(): boolean {
         return this._loading;
@@ -75,6 +80,38 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
         this.setupHlsEvents();
         this.setupAudioEvents();
+    }
+
+    
+    beginSeek() {
+    // isUserSeeking.current = true
+    //update isSeeking to true
+    this.isSeeking = true;
+  }
+
+    updateSeek(time: number) {
+    if (!this.isSeeking) return
+    this.seekPreviewTime = time
+    this.audioElement.currentTime = time // UI only
+    }
+
+    async commitSeek() {
+        if (!this.isSeeking) return
+        this.isSeeking = false
+
+        if (this.seekPreviewTime === null) return
+        const finalTime = this.seekPreviewTime
+        this.seekPreviewTime = null
+
+        if (this.loading) return
+
+        try {
+            await this.pause()
+            this.audioElement.currentTime = finalTime
+            await this.play()
+        } catch (err) {
+            console.error('Seek commit failed', err)
+        }
     }
 
     private mapConfigToHLS(config: PlayerConfig): Partial<HlsConfig> {
