@@ -1,6 +1,6 @@
 import './style.css'
-// import { HLSAudioPlayer } from '../../packages/core/dist/index.mjs';
-import { HLSAudioPlayer } from 'oddysee-typescript';
+import { HLSAudioPlayer } from '../../packages/oddysee/typescript/src/index';
+// import { HLSAudioPlayer } from 'oddysee-typescript';
 
 
 class BasicPlayerApp {
@@ -8,14 +8,24 @@ class BasicPlayerApp {
         this.player = null;
         this.eventCallbacks = {}; // Store event callbacks for proper cleanup
         this.isPlaying = false; // Track playback state for combined play/pause button
+        this.playlist = [];
+        this.currentTrackIndex = -1;
+        this.lastLoadMode = 'basic';
+        this.isScrubbing = false;
+        this.pendingSeekTime = null;
         this.init();
     }
 
     init() {
         // Get DOM elements
         this.playPauseBtn = document.getElementById('playPauseBtn');
+        this.prevBtn = document.getElementById('prevBtn');
+        this.nextBtn = document.getElementById('nextBtn');
         this.loadBtn = document.getElementById('loadBtn');
         this.headerBtn = document.getElementById('headerBtn');
+        this.scrubber = document.getElementById('scrubber');
+        this.currentTimeElement = document.getElementById('currentTime');
+        this.totalTimeElement = document.getElementById('totalTime');
         this.volumeSlider = document.getElementById('volume');
         this.qualitySelect = document.getElementById('quality');
         this.streamUrlInput = document.getElementById('streamUrl');
@@ -23,6 +33,7 @@ class BasicPlayerApp {
         this.currentTrackElement = document.getElementById('currentTrack');
         this.qualityLevelsElement = document.getElementById('qualityLevels');
         this.eventLogElement = document.getElementById('eventLog');
+        this.loadModeValue = document.getElementById('loadModeValue');
 
         // Set up event listeners
         this.setupEventListeners();
@@ -30,15 +41,24 @@ class BasicPlayerApp {
         
         this.logEvent('App initialized and ready');
         this.updateStatus('Ready to load stream');
+        this.updateLoadModeBadge();
     }
 
     setupEventListeners() {
         this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+        this.prevBtn.addEventListener('click', () => this.navigatePlaylist(-1));
+        this.nextBtn.addEventListener('click', () => this.navigatePlaylist(1));
         this.loadBtn.addEventListener('click', () => this.loadStream());
         this.headerBtn.addEventListener('click', () => this.loadStreamWithHeaders());
         this.fluentDemoBtn = document.getElementById('fluentDemoBtn');
         this.fluentDemoBtn.addEventListener('click', () => this.demoFluentAPI());
         this.volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value / 100));
+        this.scrubber.addEventListener('input', (e) => this.previewSeek(e.target.value));
+        this.scrubber.addEventListener('mousedown', () => this.startSeek());
+        this.scrubber.addEventListener('touchstart', () => this.startSeek(), { passive: true });
+        this.scrubber.addEventListener('mouseup', () => this.commitSeek());
+        this.scrubber.addEventListener('touchend', () => this.commitSeek());
+        this.scrubber.addEventListener('change', () => this.commitSeek());
 
         // Add some test stream URLs for quick testing
         this.setupTestStreams();
@@ -73,12 +93,14 @@ class BasicPlayerApp {
             }
         ];
 
+        this.playlist = testStreams;
+
         // Create quick load buttons for test streams
         const testContainer = document.createElement('div');
         testContainer.className = 'test-streams';
         testContainer.innerHTML = '<h4>🎵 Test Streams (Click to Load):</h4>';
         
-        testStreams.forEach(stream => {
+        testStreams.forEach((stream, index) => {
             const btn = document.createElement('button');
             btn.textContent = stream.title;
             btn.title = `${stream.description}\nURL: ${stream.url}`;
@@ -88,6 +110,7 @@ class BasicPlayerApp {
             btn.addEventListener('click', () => {
                 this.streamUrlInput.value = stream.url;
                 this.currentStreamInfo = stream; // Store for display
+                this.currentTrackIndex = index;
                 this.loadStream();
             });
             testContainer.appendChild(btn);
@@ -131,12 +154,15 @@ class BasicPlayerApp {
             if (timeElement) {
                 timeElement.remove();
             }
+
+            this.resetScrubber();
             
             this.logEvent('✅ Previous player cleaned up');
         }
     }
 
-    async loadStream() {
+    async loadStream(options = {}) {
+        const { autoPlay = true } = options;
         const url = this.streamUrlInput.value.trim();
         if (!url) {
             alert('Please enter a stream URL');
@@ -144,6 +170,10 @@ class BasicPlayerApp {
         }
 
         try {
+            this.lastLoadMode = 'basic';
+            this.updateLoadModeBadge();
+            this.syncCurrentTrackIndex(url);
+
             // Clean up any existing player before creating a new one
             this.cleanupPlayer();
             
@@ -163,9 +193,11 @@ class BasicPlayerApp {
             this.updateControls(true);
             this.updateTrackInfo(streamTitle);
             
-            // Auto-play after successful load
-            this.logEvent('🎵 Auto-playing stream...');
-            this.player.play();
+            if (autoPlay) {
+                // Auto-play after successful load
+                this.logEvent('🎵 Auto-playing stream...');
+                this.player.play();
+            }
             
         } catch (error) {
             this.logEvent(`❌ ERROR: ${error.message}`, 'error');
@@ -174,7 +206,8 @@ class BasicPlayerApp {
         }
     }
 
-    async loadStreamWithHeaders() {
+    async loadStreamWithHeaders(options = {}) {
+        const { autoPlay = true } = options;
         const url = this.streamUrlInput.value.trim();
         if (!url) {
             alert('Please enter a stream URL');
@@ -182,6 +215,10 @@ class BasicPlayerApp {
         }
 
         try {
+            this.lastLoadMode = 'headers';
+            this.updateLoadModeBadge();
+            this.syncCurrentTrackIndex(url);
+
             // Clean up any existing player before creating a new one
             this.cleanupPlayer();
             
@@ -213,9 +250,11 @@ class BasicPlayerApp {
             this.updateControls(true);
             this.updateTrackInfo(streamTitle);
             
-            // Auto-play after successful load
-            this.logEvent('🎵 Auto-playing stream with headers...');
-            this.player.play();
+            if (autoPlay) {
+                // Auto-play after successful load
+                this.logEvent('🎵 Auto-playing stream with headers...');
+                this.player.play();
+            }
             
         } catch (error) {
             this.logEvent(`❌ ERROR: ${error.message}`, 'error');
@@ -274,8 +313,11 @@ class BasicPlayerApp {
         };
         this.player.on('loadedmetadata', this.eventCallbacks.loadedmetadata);
 
-        this.eventCallbacks.timeupdate = (currentTime) => {
+        this.eventCallbacks.timeupdate = (data) => {
+            const currentTime = data?.currentTime ?? 0;
+            const duration = data?.duration ?? null;
             this.updateCurrentTime(currentTime);
+            this.updateScrubber(currentTime, duration);
         };
         this.player.on('timeupdate', this.eventCallbacks.timeupdate);
 
@@ -337,11 +379,13 @@ class BasicPlayerApp {
     updatePlayPauseButton() {
         if (this.playPauseBtn) {
             if (this.isPlaying) {
-                this.playPauseBtn.textContent = '⏸️ Pause';
+                this.playPauseBtn.textContent = '⏸';
                 this.playPauseBtn.title = 'Pause playback';
+                this.playPauseBtn.setAttribute('aria-label', 'Pause playback');
             } else {
-                this.playPauseBtn.textContent = '▶️ Play';
+                this.playPauseBtn.textContent = '▶';
                 this.playPauseBtn.title = 'Start playback';
+                this.playPauseBtn.setAttribute('aria-label', 'Start playback');
             }
         }
     }
@@ -371,10 +415,127 @@ class BasicPlayerApp {
 
     updateControls(enabled) {
         this.playPauseBtn.disabled = !enabled;
+        this.prevBtn.disabled = !enabled || this.playlist.length === 0;
+        this.nextBtn.disabled = !enabled || this.playlist.length === 0;
+        this.scrubber.disabled = !enabled;
         this.volumeSlider.disabled = !enabled;
         this.qualitySelect.disabled = !enabled;
         if (this.fluentDemoBtn) {
             this.fluentDemoBtn.disabled = !enabled;
+        }
+    }
+
+    syncCurrentTrackIndex(url) {
+        const index = this.playlist.findIndex((stream) => stream.url === url);
+        this.currentTrackIndex = index;
+    }
+
+    updateLoadModeBadge() {
+        if (!this.loadModeValue) return;
+        const label = this.lastLoadMode === 'headers' ? 'Headers' : 'Basic';
+        this.loadModeValue.textContent = label;
+    }
+
+    navigatePlaylist(step) {
+        if (!this.playlist.length) {
+            this.logEvent('📭 No playlist available for navigation', 'warning');
+            return;
+        }
+
+        let index = this.currentTrackIndex;
+        if (index === -1) {
+            const currentUrl = this.streamUrlInput.value.trim();
+            index = this.playlist.findIndex((stream) => stream.url === currentUrl);
+            if (index === -1) {
+                index = 0;
+            }
+        }
+
+        const nextIndex = (index + step + this.playlist.length) % this.playlist.length;
+        this.loadStreamFromPlaylist(nextIndex);
+    }
+
+    loadStreamFromPlaylist(index) {
+        const stream = this.playlist[index];
+        if (!stream) return;
+        this.streamUrlInput.value = stream.url;
+        this.currentStreamInfo = stream;
+        this.currentTrackIndex = index;
+        if (this.lastLoadMode === 'headers') {
+            this.loadStreamWithHeaders({ autoPlay: true });
+        } else {
+            this.loadStream({ autoPlay: true });
+        }
+    }
+
+    resetScrubber() {
+        if (this.scrubber) {
+            this.scrubber.value = 0;
+            this.scrubber.max = 0;
+            this.scrubber.disabled = true;
+        }
+        if (this.currentTimeElement) {
+            this.currentTimeElement.textContent = '0:00';
+        }
+        if (this.totalTimeElement) {
+            this.totalTimeElement.textContent = '0:00';
+        }
+        this.isScrubbing = false;
+        this.pendingSeekTime = null;
+    }
+
+    updateScrubber(currentTime, duration) {
+        if (!this.scrubber || !this.currentTimeElement || !this.totalTimeElement) return;
+        if (typeof duration === 'number' && !isNaN(duration) && duration > 0) {
+            this.scrubber.max = duration;
+            this.scrubber.disabled = false;
+            this.totalTimeElement.textContent = this.formatTime(duration);
+        } else {
+            this.scrubber.disabled = true;
+            return;
+        }
+
+        if (!this.isScrubbing) {
+            this.scrubber.value = currentTime;
+            this.currentTimeElement.textContent = this.formatTime(currentTime);
+        }
+    }
+
+    startSeek() {
+        if (!this.player || !this.scrubber || this.scrubber.disabled) return;
+        this.isScrubbing = true;
+        this.pendingSeekTime = parseFloat(this.scrubber.value) || 0;
+        if (typeof this.player.beginSeek === 'function') {
+            this.player.beginSeek();
+        }
+    }
+
+    previewSeek(value) {
+        if (!this.player || !this.scrubber) return;
+        const time = parseFloat(value);
+        if (Number.isNaN(time)) return;
+        if (!this.isScrubbing) {
+            this.startSeek();
+        }
+        this.pendingSeekTime = time;
+        if (this.currentTimeElement) {
+            this.currentTimeElement.textContent = this.formatTime(time);
+        }
+    }
+
+    commitSeek() {
+        if (!this.player || !this.isScrubbing) return;
+        this.isScrubbing = false;
+        const finalTime = this.pendingSeekTime;
+        this.pendingSeekTime = null;
+        if (typeof this.player.updateSeek === 'function' && typeof finalTime === 'number') {
+            this.player.updateSeek(finalTime);
+        }
+        if (typeof this.player.commitSeek === 'function') {
+            const result = this.player.commitSeek();
+            if (result && typeof result.catch === 'function') {
+                result.catch(() => {});
+            }
         }
     }
 
