@@ -1,4 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type PointerEvent,
+  type MouseEvent,
+  type TouchEvent,
+} from 'react'
 import {
   HLSAudioPlayer,
   type HLSAudioPlayerInterface,
@@ -9,7 +19,9 @@ import {
   type Track,
   type QualityLevel,
   type PlayerState
-} from 'oddysee-typescript'
+} 
+from '../../typescript/src/index'
+// from 'oddysee-typescript'
 
 // Local mirror of the core's PlayerEventMap so we don't depend on it being exported
 export type PlayerEventMap = {
@@ -43,6 +55,27 @@ export interface UseHlsAudioPlayerResult {
   loading: boolean
   error: PlayerError | null
   readyState: number
+  scrub: {
+    isScrubbing: boolean
+    displayTime: number
+    start: () => void
+    preview: (time: number) => void
+    commit: (time?: number) => void
+  }
+  seekBar: {
+    isScrubbing: boolean
+    displayTime: number
+    onChange: (event: ChangeEvent<HTMLInputElement>) => void
+    onPointerDown: () => void
+    onPointerUp: (event: PointerEvent<HTMLInputElement>) => void
+    onPointerCancel: () => void
+    onMouseDown: () => void
+    onMouseUp: (event: MouseEvent<HTMLInputElement>) => void
+    onTouchStart: () => void
+    onTouchEnd: (event: TouchEvent<HTMLInputElement>) => void
+    onFocus: () => void
+    onBlur: () => void
+  }
   controls: {
     setSource: (
       url: string,
@@ -53,6 +86,9 @@ export interface UseHlsAudioPlayerResult {
     pause: () => void
     setVolume: (volume: number) => void
     setCurrentTime: (time: number) => void
+    beginSeek: () => void
+    updateSeek: (time: number) => void
+    commitSeek: () => void
   }
 }
 
@@ -87,6 +123,9 @@ export function useHlsAudioPlayer(
   const [isPlaying, setIsPlaying] = useState<boolean>(player.isPlaying ?? false)
   const [duration, setDuration] = useState<number>(player.getState()?.duration ?? 0)
   const [isLoading, setIsLoading] = useState<boolean>(player.loading ?? false)
+  const [isScrubbing, setIsScrubbing] = useState(false)
+  const [scrubTime, setScrubTime] = useState(0)
+  const scrubTimeRef = useRef(0)
 
   useEffect(() => {
     const handleStateChange = () => {
@@ -223,8 +262,51 @@ export function useHlsAudioPlayer(
         const audioElement = player.getAudioElement()
         audioElement.currentTime = time
       },
+      beginSeek:() =>
+        player.beginSeek(),
+      updateSeek: (time: number) =>
+        player.updateSeek(time),
+      commitSeek: () =>
+        player.commitSeek(),
     }),
     [player, autoPlay],
+  )
+
+  const beginScrub = useCallback(() => {
+    if (!state.duration) return
+    setIsScrubbing(true)
+    scrubTimeRef.current = state.currentTime
+    setScrubTime(state.currentTime)
+    player.beginSeek()
+  }, [player, state.currentTime, state.duration])
+
+  const updateScrub = useCallback((time: number) => {
+    scrubTimeRef.current = time
+    setScrubTime(time)
+  }, [])
+
+  const commitScrub = useCallback(
+    (time?: number) => {
+      if (!isScrubbing) return
+      if (typeof time === 'number' && !Number.isNaN(time)) {
+        scrubTimeRef.current = time
+        setScrubTime(time)
+      }
+      setIsScrubbing(false)
+      player.updateSeek(scrubTimeRef.current)
+      player.commitSeek()
+    },
+    [player, isScrubbing],
+  )
+
+  const commitScrubFromElement = useCallback(
+    (element: HTMLInputElement) => {
+      requestAnimationFrame(() => {
+        const nextTime = Number(element.value)
+        commitScrub(nextTime)
+      })
+    },
+    [commitScrub],
   )
 
   return {
@@ -236,6 +318,59 @@ export function useHlsAudioPlayer(
     loading,
     error,
     readyState,
+    seekBar: {
+      isScrubbing,
+      displayTime: isScrubbing ? scrubTime : state.currentTime,
+      onChange: (event: ChangeEvent<HTMLInputElement>) => {
+        const nextTime = Number(event.target.value)
+        if (!isScrubbing) {
+          beginScrub()
+        }
+        updateScrub(nextTime)
+      },
+      onPointerDown: () => {
+        if (!isScrubbing) {
+          beginScrub()
+        }
+      },
+      onPointerUp: (event: PointerEvent<HTMLInputElement>) => {
+        commitScrubFromElement(event.currentTarget)
+      },
+      onPointerCancel: () => {
+        commitScrub()
+      },
+      onMouseDown: () => {
+        if (!isScrubbing) {
+          beginScrub()
+        }
+      },
+      onMouseUp: (event: MouseEvent<HTMLInputElement>) => {
+        commitScrubFromElement(event.currentTarget)
+      },
+      onTouchStart: () => {
+        if (!isScrubbing) {
+          beginScrub()
+        }
+      },
+      onTouchEnd: (event: TouchEvent<HTMLInputElement>) => {
+        commitScrubFromElement(event.currentTarget)
+      },
+      onFocus: () => {
+        if (!isScrubbing) {
+          beginScrub()
+        }
+      },
+      onBlur: () => {
+        commitScrub()
+      },
+    },
+    scrub: {
+      isScrubbing,
+      displayTime: isScrubbing ? scrubTime : state.currentTime,
+      start: beginScrub,
+      preview: updateScrub,
+      commit: commitScrub,
+    },
     controls,
   }
 }

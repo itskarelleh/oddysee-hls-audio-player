@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useHlsAudioPlayer } from "oddysee-react";
+import { useRef, useState } from "react";
+import { useHlsAudioPlayer } from '../../../packages/oddysee/react/src/use-hls-audio-player'
+// from "oddysee-react";
 import {
   Play,
   Pause,
@@ -47,7 +48,7 @@ export default function App() {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const currentTrack = playlist[currentTrackIndex];
 
-  const { state, controls, isLoading, isPlaying } = useHlsAudioPlayer({
+  const { state, controls, isLoading, isPlaying, scrub } = useHlsAudioPlayer({
     src: { url: currentTrack.url },
     autoPlay: true,
   });
@@ -62,16 +63,32 @@ export default function App() {
 
   const playTrack = (index: number) => {
     setCurrentTrackIndex(index);
+    controls.setSource(currentTrack.url);
   };
 
   const playPrevious = () => {
     const newIndex = currentTrackIndex === 0 ? playlist.length - 1 : currentTrackIndex - 1;
     setCurrentTrackIndex(newIndex);
+    controls.setSource(playlist[newIndex].url);
   };
 
   const playNext = () => {
     const newIndex = (currentTrackIndex + 1) % playlist.length;
     setCurrentTrackIndex(newIndex);
+    controls.setSource(playlist[newIndex].url);
+  };
+
+  const duration = state.duration ?? 0;
+  const scrubberRef = useRef<HTMLDivElement | null>(null);
+  const progressPercent = duration
+    ? Math.min(100, Math.max(0, (scrub.displayTime / duration) * 100))
+    : 0;
+
+  const getTimeFromClientX = (clientX: number, element: HTMLDivElement) => {
+    const rect = element.getBoundingClientRect();
+    const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+    const ratio = rect.width ? clampedX / rect.width : 0;
+    return ratio * duration;
   };
 
   return (
@@ -163,21 +180,100 @@ export default function App() {
 
         {/* Progress */}
         <div className="mt-6">
+          {/* Input scrubber (kept for reference)
           <input
             type="range"
             min={0}
-            max={state.duration ?? 0}
-            value={state.currentTime}
-            onChange={(e) =>
-              controls.setCurrentTime(Number(e.target.value))
-            }
+            max={duration}
+            disabled={!duration}
+            value={seekBar.displayTime}
+            onFocus={seekBar.onFocus}
+            onBlur={seekBar.onBlur}
+            onPointerDown={seekBar.onPointerDown}
+            onPointerUp={seekBar.onPointerUp}
+            onPointerCancel={seekBar.onPointerCancel}
+            onMouseDown={seekBar.onMouseDown}
+            onMouseUp={seekBar.onMouseUp}
+            onTouchStart={seekBar.onTouchStart}
+            onTouchEnd={seekBar.onTouchEnd}
+            onChange={seekBar.onChange}
             className="w-full cursor-pointer accent-teal-300"
           />
+          */}
+          <div
+            ref={scrubberRef}
+            role="slider"
+            aria-label="Seek"
+            aria-valuemin={0}
+            aria-valuemax={duration}
+            aria-valuenow={scrub.displayTime}
+            tabIndex={duration ? 0 : -1}
+            data-scrubber="custom"
+            className={`relative ${
+              duration ? "cursor-pointer" : "opacity-50"
+            }`}
+            style={{
+              height: 12,
+              width: "100%",
+              borderRadius: 9999,
+              backgroundColor: "#374151",
+              position: "relative",
+            }}
+            onPointerDown={(event) => {
+              if (!duration || !scrubberRef.current) return;
+              scrub.start();
+              const nextTime = getTimeFromClientX(event.clientX, scrubberRef.current);
+              scrub.preview(nextTime);
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onPointerMove={(event) => {
+              if (!scrub.isScrubbing || !scrubberRef.current) return;
+              const nextTime = getTimeFromClientX(event.clientX, scrubberRef.current);
+              scrub.preview(nextTime);
+            }}
+            onPointerUp={(event) => {
+              if (!scrubberRef.current) return;
+              const nextTime = getTimeFromClientX(event.clientX, scrubberRef.current);
+              scrub.commit(nextTime);
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }}
+            onPointerCancel={(event) => {
+              if (!scrubberRef.current) return;
+              const nextTime = getTimeFromClientX(event.clientX, scrubberRef.current);
+              scrub.commit(nextTime);
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                height: "100%",
+                width: `${progressPercent}%`,
+                borderRadius: 9999,
+                backgroundColor: "#2dd4bf",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                height: 16,
+                width: 16,
+                transform: "translateY(-50%)",
+                borderRadius: 9999,
+                backgroundColor: "#99f6e4",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.35)",
+                left: `calc(${progressPercent}% - 8px)`,
+              }}
+            />
+          </div>
           <div className="flex justify-between text-xs text-gray-400 mt-1">
-            <span>{state.currentTime.toFixed(0)}s</span>
+            <span>{scrub.displayTime.toFixed(0)}s</span>
             <span>
-              {state.duration
-                ? `${state.duration.toFixed(0)}s`
+              {duration
+                ? `${duration.toFixed(0)}s`
                 : "--"}
             </span>
           </div>
