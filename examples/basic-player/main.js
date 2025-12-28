@@ -480,6 +480,7 @@ class BasicPlayerApp {
         if (this.totalTimeElement) {
             this.totalTimeElement.textContent = '0:00';
         }
+        
         this.isScrubbing = false;
         this.pendingSeekTime = null;
     }

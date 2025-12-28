@@ -84,8 +84,6 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
     
     beginSeek() {
-    // isUserSeeking.current = true
-    //update isSeeking to true
     this.isSeeking = true;
   }
 
