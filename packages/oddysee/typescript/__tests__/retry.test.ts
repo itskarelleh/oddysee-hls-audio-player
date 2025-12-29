@@ -62,4 +62,14 @@ describe('player.retry()', () => {
         const player = new HLSAudioPlayer({});
         player.retry(3, 1000);
     });
+
+    it('should not retry if there is no track/source', () => {
+        const player = new HLSAudioPlayer({});
+        // player.retry();
+
+        console.log(player.retry);
+
+        // expect(player.retry).not.toHaveBeenCalled();
+    });
+
 });

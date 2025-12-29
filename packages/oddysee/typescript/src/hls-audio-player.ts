@@ -30,6 +30,7 @@ export interface HLSAudioPlayerInterface {
     beginSeek(): void;
     updateSeek(time: number): void;
     commitSeek(): void
+    retry(count?: number, interval?: number): void;
 
 	getState(): PlayerState;
 	getAudioElement(): HTMLAudioElement;
@@ -56,6 +57,8 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private _isPlaying: boolean = false;
     private isSeeking: boolean = false;
     private seekPreviewTime: number | null = null;
+    private retryCount: number;
+    private retryInterval: number = 1000;
 
     get loading(): boolean {
         return this._loading;
@@ -75,6 +78,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
     constructor(config: PlayerConfig = {}) {
         this.config = config;
+        this.retryCount = config.network?.retryCount ?? 2;
         this.audioElement = new Audio();
         this.hls = new HLS(this.mapConfigToHLS(config));
 
@@ -82,7 +86,6 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         this.setupAudioEvents();
     }
 
-    
     beginSeek() {
     this.isSeeking = true;
   }
@@ -109,6 +112,18 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             await this.play()
         } catch (err) {
             console.error('Seek commit failed', err)
+        }
+    }
+
+    retry(count?: number, interval?: number): void {
+        if(!this.currentTrack) return;
+        this.retryCount = count ?? this.retryCount;
+        this.retryInterval = interval ?? this.retryInterval;
+
+        try {
+            this.setSource(this.currentTrack.url, this.currentTrack);
+        } catch (err) {
+            console.error('Retry failed', err);
         }
     }
 
