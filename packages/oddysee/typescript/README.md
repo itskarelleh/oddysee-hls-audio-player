@@ -202,3 +202,5 @@ This package ships with TypeScript types out of the box, including:
 
 These types make it straightforward to build your own providers, hooks, or UI components on top of the core player.
 
+## License
+MIT

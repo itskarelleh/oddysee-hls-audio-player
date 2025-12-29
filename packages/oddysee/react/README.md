@@ -355,5 +355,4 @@ export default function EventHandlingPlayer() {
 - oddysee-typescript (peer dependency)
 
 ## License
-
-Apache-2.0
+MIT 
