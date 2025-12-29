@@ -89,6 +89,7 @@ export interface UseHlsAudioPlayerResult {
     beginSeek: () => void
     updateSeek: (time: number) => void
     commitSeek: () => void
+    retry: (count?: number, interval?: number) => void
   }
 }
 
@@ -268,6 +269,9 @@ export function useHlsAudioPlayer(
         player.updateSeek(time),
       commitSeek: () =>
         player.commitSeek(),
+      retry: (count?: number, interval?: number) => {
+        player.retry(count, interval)
+      },
     }),
     [player, autoPlay],
   )
@@ -371,6 +375,6 @@ export function useHlsAudioPlayer(
       update: updateScrub,
       commit: commitScrub,
     },
-    controls,
+    controls
   }
 }
