@@ -1,5 +1,5 @@
 {
-  "name": "hls-audio-player-monorepo",
+  "name": "oddysee-typescript-monorepo",
   "private": true,
   "workspaces": ["packages/*"],
   "scripts": {

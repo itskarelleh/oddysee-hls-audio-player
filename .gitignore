@@ -1,2 +1,6 @@
 node_modules
 verdaccio
+
+dist/
+packages/*/dist/
+.early.coverage

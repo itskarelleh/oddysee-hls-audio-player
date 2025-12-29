@@ -1,4 +1,4 @@
-# @hls-audio-player/core
+# oddysee-typescript
 
 Low-level, strongly-typed audio player built on top of [hls.js](https://github.com/video-dev/hls.js), focused on audio streaming. This package does **not** depend on React – it just gives you a clean class API you can wire into any UI.
 
@@ -7,9 +7,9 @@ Low-level, strongly-typed audio player built on top of [hls.js](https://github.c
 ## Installation
 
 ```bash
-npm install @hls-audio-player/core hls.js
+npm install oddysee-typescript hls.js
 # or
-yarn add @hls-audio-player/core hls.js
+yarn add oddysee-typescript hls.js
 ```
 
 ---
@@ -17,7 +17,7 @@ yarn add @hls-audio-player/core hls.js
 ## Quick start
 
 ```ts
-import { HLSAudioPlayer } from '@hls-audio-player/core';
+import { HLSAudioPlayer } from 'oddysee-typescript';
 
 const player = new HLSAudioPlayer({
   network: {

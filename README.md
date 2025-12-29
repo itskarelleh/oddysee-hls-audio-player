@@ -1,35 +1,36 @@
-# HLS Audio Player
+# Oddysee - HLS Audio Player
 A library API that wraps around HLS.js for a better developer experience. Because audio streaming shouldn't require a PhD in streaming protocols.
 
+## ⚠️ Status: Beta
+Oddysee is actively evolving. APIs may change, and breaking changes can occur between minor releases.
+
 ## Background
-I built this because I needed an audio player that supported HLS, but everything out there was video-first with audio as an afterthought.
-
+I built this because I needed an audio player that supported HLS, but all the solutions I came across were either bloated or not maintained. 
 Then I discovered HLS.js. It saved me but it wasn't easy! The developer experience feels like you're configuring a spaceship when all you want to do is play some music.
-
 This library wraps all that complexity into a simple, audio-focused API that actually makes sense.
 
 ## Packages
 
-- **[@hls-audio-player/core](./packages/core)** - Core player library (framework-agnostic)
-- **[@hls-audio-player/react](./packages/react)** - React hooks wrapper
+- **[oddysee-typescript](./packages/oddysee/core/README.md)** - Core player library (framework-agnostic)
+- **[oddysee-react](./packages/oddysee/react/README.md)** - React hooks wrapper
 
 ## Installation
 
 ### Core (Vanilla JS, or any framework)
 ```bash
-npm install @hls-audio-player/core
+npm install oddysee-typescript
 ```
 
 ### React Hook
 ```bash
-npm install @hls-audio-player/react
+npm install oddysee-react
 ```
 
 ## Quick Start
 
 ### Vanilla JavaScript
 ```typescript
-import { HLSAudioPlayer } from '@hls-audio-player/core';
+import { HLSAudioPlayer } from 'oddysee-typescript';
 
 // Simple usage - because it should be this easy
 const player = new HLSAudioPlayer();
@@ -45,7 +46,7 @@ player.on('timeupdate', ({ currentTime, duration }) => {
 
 ### React
 ```typescript
-import { useHlsAudioPlayer } from '@hls-audio-player/react';
+import { useHlsAudioPlayer } from 'oddysee-react';
 
 function AudioPlayer() {
   const { controls, state } = useHlsAudioPlayer({
@@ -92,8 +93,8 @@ const player = new HLSAudioPlayer({
 ## API Documentation
 
 See detailed documentation for each package:
-- [Core API Documentation](./packages/core/README.md)
-- [React Hook Documentation](./packages/react/README.md)
+- [Core API Documentation](./packages/oddysee/typescript/README.md)
+- [React Hook Documentation](./packages/oddysee/react/README.md)
 
 ## FAQs
 
@@ -115,6 +116,32 @@ A: This library is specifically for audio streaming. There are other excellent l
 **Q: Does this support live streams?**  
 A: Yes! HLS handles both live streams and on-demand audio. Just point it at your `.m3u8` playlist URL.
 
+**Q: I installed this and it’s not working. What’s up?**
+A: Don’t worry, this is a common question! Here’s what to check:
+
+HLS Only: This player is built specifically for HLS streams (.m3u8 files). It won’t work with regular audio files like MP3 or WAV.
+
+Progressive Audio: If you’re trying to play a standard audio file, you’ll need a different solution. Here are some options:
+
+react-use-audio-player
+ – lightweight, React-friendly, great for MP3/WAV.
+
+howler.js
+ – supports multiple formats, fades, and more advanced features. (Still functional despite last being updated a couple of years ago.)
+
+Video-first / adaptive streaming: If you need more advanced streaming capabilities beyond HLS audio, a video library like video.js
+ with HLS plugins might work, but it’s overkill for audio-only use cases.
+
+⚠️ Pro tip: Most “all-in-one” audio players don’t handle HLS streaming properly — that’s why HLS-specific solutions are rare. If your goal is segmented streaming, Oddysee is designed for exactly that.
+
+**If none of that worked and you're sure you need an audio only solution for your hls audio, open an issue and we'll help you out 😊**
+
+## Origin Story
+
+This library exists because of a classic developer “what just happened?!” moment: SoundCloud rolled out an update, and suddenly nothing was working anymore. MP3s, WAVs — all the usual endpoints were busted. The only thing that still worked was the HLS/AAC streams (.m3u8).
+
+So we did what any reasonable, slightly stubborn developer would do: built a fully typed, framework-agnostic HLS audio player that just works. No fuss, no juggling 50+ HLS.js events, just play your audio and ship features.
+
 ## Browser Support
 
 Works in all modern browsers that support:
@@ -131,8 +158,8 @@ We welcome contributions! Whether you're fixing bugs, adding features, or improv
 
 1. Clone the repo
    ```bash
-   git clone https://github.com/itskarelleh/hls-audio-player-ts.git
-   cd hls-audio-player-ts
+   git clone https://github.com/itskarelleh/oddysee-hls-audio-player.git
+   cd oddysee-hls-audio-player
    ```
 
 2. Install dependencies
@@ -162,7 +189,7 @@ If you want to test changes locally before publishing to npm:
 
 3. **Publish locally**
    ```bash
-   cd packages/core
+   cd packages/oddysee-typescript
    npm run build
    npm publish
    ```
@@ -178,7 +205,7 @@ We expect all contributors to read and follow our [Code of Conduct](CODE_OF_COND
 
 ## License
 
-Apache License 2.0 - see [LICENSE](LICENSE) for details.
+MIT - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 

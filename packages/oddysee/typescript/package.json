@@ -1,12 +1,19 @@
 {
-  "name": "@hls-audio-player/core",
-  "version": "0.1.0",
+  "name": "oddysee-typescript",
+  "version": "0.1.1",
   "description": "A simple HLS audio player that wraps verbose HLS.js complexity into intuitive audio controls",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "Karelle Hofler",
-  "license": "Apache-2.0",
-  "url": "https://github.com/itskarelleh/hls-audio-player",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/itskarelleh/oddysee-hls-audio-player.git"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
@@ -45,6 +52,6 @@
   "devDependencies": {
     "tsup": "7.2.0",
     "typescript": "^5.0.0",
-    "vitest": "^0.32.0"
+    "vitest": "^0.32.4"
   }
 }

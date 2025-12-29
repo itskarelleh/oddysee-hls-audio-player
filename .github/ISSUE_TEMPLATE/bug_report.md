@@ -13,7 +13,7 @@ A clear and concise description of what the bug is.
 ## Reproduction Steps
 Please provide detailed steps to reproduce the issue:
 
-1. Install version: `npm install @hls-audio-player/core@x.x.x`
+1. Install version: `npm install oddysee-typescript@x.x.x`
 2. Use this code:
    ```typescript
    // Your code here
@@ -47,7 +47,7 @@ Add any other context about the problem here, such as:
 Please provide a minimal reproduction case:
 
 ```typescript
-import { HLSAudioPlayer } from '@hls-audio-player/core';
+import { HLSAudioPlayer } from 'oddysee-typescript';
 
 // Minimal code that reproduces the issue
 const player = new HLSAudioPlayer();
