@@ -2,6 +2,9 @@
 
 A React hook that provides a simple, intuitive interface for HLS audio streaming using the core HLS audio player.
 
+## ⚠️ Status: Beta
+Oddysee is actively evolving. APIs may change, and breaking changes can occur between minor releases.
+
 ## Installation
 
 ```bash
