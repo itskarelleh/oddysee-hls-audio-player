@@ -24,6 +24,7 @@
     "build": "tsup src/index.ts --format esm,cjs --dts --tsconfig tsconfig.lib.json",
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
     "lint": "eslint .",
+    "test": "vitest",
     "preview": "vite preview",
     "pub": "npm run build && npm publish",
     "pub:test": "npm run build && npm publish --tag test"
@@ -46,6 +47,7 @@
     "tsup": "7.2.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vitest": "^4.0.16"
   }
 }

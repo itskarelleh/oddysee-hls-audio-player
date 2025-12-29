@@ -180,26 +180,6 @@ export default function App() {
 
         {/* Progress */}
         <div className="mt-6">
-          {/* Input scrubber (kept for reference)
-          <input
-            type="range"
-            min={0}
-            max={duration}
-            disabled={!duration}
-            value={seekBar.displayTime}
-            onFocus={seekBar.onFocus}
-            onBlur={seekBar.onBlur}
-            onPointerDown={seekBar.onPointerDown}
-            onPointerUp={seekBar.onPointerUp}
-            onPointerCancel={seekBar.onPointerCancel}
-            onMouseDown={seekBar.onMouseDown}
-            onMouseUp={seekBar.onMouseUp}
-            onTouchStart={seekBar.onTouchStart}
-            onTouchEnd={seekBar.onTouchEnd}
-            onChange={seekBar.onChange}
-            className="w-full cursor-pointer accent-teal-300"
-          />
-          */}
           <div
             ref={scrubberRef}
             role="slider"
@@ -221,15 +201,15 @@ export default function App() {
             }}
             onPointerDown={(event) => {
               if (!duration || !scrubberRef.current) return;
-              scrub.start();
+              scrub.begin();
               const nextTime = getTimeFromClientX(event.clientX, scrubberRef.current);
-              scrub.preview(nextTime);
+              scrub.update(nextTime);
               event.currentTarget.setPointerCapture(event.pointerId);
             }}
             onPointerMove={(event) => {
               if (!scrub.isScrubbing || !scrubberRef.current) return;
               const nextTime = getTimeFromClientX(event.clientX, scrubberRef.current);
-              scrub.preview(nextTime);
+              scrub.update(nextTime);
             }}
             onPointerUp={(event) => {
               if (!scrubberRef.current) return;

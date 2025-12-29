@@ -58,8 +58,8 @@ export interface UseHlsAudioPlayerResult {
   scrub: {
     isScrubbing: boolean
     displayTime: number
-    start: () => void
-    preview: (time: number) => void
+    begin: () => void
+    update: (time: number) => void
     commit: (time?: number) => void
   }
   seekBar: {
@@ -367,8 +367,8 @@ export function useHlsAudioPlayer(
     scrub: {
       isScrubbing,
       displayTime: isScrubbing ? scrubTime : state.currentTime,
-      start: beginScrub,
-      preview: updateScrub,
+      begin: beginScrub,
+      update: updateScrub,
       commit: commitScrub,
     },
     controls,
