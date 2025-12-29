@@ -13,6 +13,11 @@ class BasicPlayerApp {
         this.lastLoadMode = 'basic';
         this.isScrubbing = false;
         this.pendingSeekTime = null;
+        // Retry policy for network errors.
+        this.retryAttempts = 0;
+        this.retryTimeout = null;
+        this.maxRetryAttempts = 2;
+        this.retryDelayMs = 1000;
         this.init();
     }
 
@@ -156,6 +161,7 @@ class BasicPlayerApp {
             }
 
             this.resetScrubber();
+            this.resetRetryState();
             
             this.logEvent('✅ Previous player cleaned up');
         }
@@ -183,7 +189,11 @@ class BasicPlayerApp {
             this.logEvent(`URL: ${url}`);
 
             // Create player with basic config and use fluent API
-            this.player = new HLSAudioPlayer();
+            this.player = new HLSAudioPlayer({
+                network: {
+                    retryCount: this.maxRetryAttempts
+                }
+            });
             this.setupPlayerEvents();
 
             // Use the new fluent API
@@ -229,6 +239,7 @@ class BasicPlayerApp {
             // Create player with header configuration and use fluent API
             this.player = new HLSAudioPlayer({
                 network: {
+                    retryCount: this.maxRetryAttempts,
                     headers: {
                         'Authorization': 'Bearer demo-token-12345',
                         'User-Agent': 'HLS-Audio-Player-Demo/1.0',
@@ -301,6 +312,8 @@ class BasicPlayerApp {
             this.logEvent('✅ Ready to play');
             this.updateStatus('Ready');
             this.showLoadingIndicator(false);
+            // Successful load clears any pending retry attempts.
+            this.resetRetryState();
         };
         this.player.on('canplay', this.eventCallbacks.canplay);
 
@@ -540,6 +553,51 @@ class BasicPlayerApp {
         }
     }
 
+    retry() {
+        if (this.player) {
+            this.retryAttempts = 0;
+            // Manual retry uses the same scheduling logic as automatic retries.
+            this.scheduleRetry();
+        }
+    }
+
+    resetRetryState() {
+        // Clear retry counters and any queued retry timer.
+        this.retryAttempts = 0;
+        if (this.retryTimeout) {
+            clearTimeout(this.retryTimeout);
+            this.retryTimeout = null;
+        }
+    }
+
+    scheduleRetry() {
+        if (!this.player) return false;
+        if (this.retryAttempts >= this.maxRetryAttempts) {
+            this.logEvent('⛔️ Retry limit reached', 'warning');
+            return false;
+        }
+
+        this.retryAttempts += 1;
+        const attempt = this.retryAttempts;
+        const delay = this.retryDelayMs;
+
+        // Announce retry to both the UI log and console for verification.
+        this.logEvent(`🔁 Retrying in ${delay}ms (attempt ${attempt}/${this.maxRetryAttempts})`, 'warning');
+        console.log(`[HLSAudioPlayer] retry attempt ${attempt}/${this.maxRetryAttempts} in ${delay}ms`);
+
+        if (this.retryTimeout) {
+            clearTimeout(this.retryTimeout);
+        }
+
+        this.retryTimeout = setTimeout(() => {
+            if (!this.player) return;
+            // Delegate retry execution to the TypeScript package API.
+            this.player.retry(this.maxRetryAttempts, delay);
+        }, delay);
+
+        return true;
+    }
+
     updateTrackInfo(streamTitle = null) {
         if (this.player) {
             const track = this.player.getCurrentTrack();
@@ -644,6 +702,9 @@ class BasicPlayerApp {
         switch (error.code) {
             case 'NETWORK_ERROR':
                 this.logEvent('🌐 Network error - Check your connection', 'error');
+                if (this.scheduleRetry()) {
+                    return;
+                }
                 break;
             case 'MEDIA_ERROR':
                 this.logEvent('🎵 Media error - Stream format may be unsupported', 'error');
