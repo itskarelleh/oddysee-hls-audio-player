@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useHlsAudioPlayer } from '../../../packages/oddysee/react/src/use-hls-audio-player'
 // from "oddysee-react";
 import {
@@ -47,11 +47,65 @@ export default function App() {
 
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const currentTrack = playlist[currentTrackIndex];
+  const maxRetryAttempts = 3;
+  const retryDelayMs = 1500;
+  // Retry bookkeeping lives in the component so the UI can reflect it.
+  const [retryAttempts, setRetryAttempts] = useState(0);
+  const [retryPending, setRetryPending] = useState(false);
+  const retryAttemptsRef = useRef(0);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear any pending retry timer and update the UI state.
+  const clearRetryTimeout = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+    setRetryPending(false);
+  }, []);
+
+  // Reset retry counters when playback succeeds or the track changes.
+  const resetRetryState = useCallback(() => {
+    retryAttemptsRef.current = 0;
+    setRetryAttempts(0);
+    clearRetryTimeout();
+  }, [clearRetryTimeout]);
 
   const { state, controls, isLoading, isPlaying, scrub } = useHlsAudioPlayer({
     src: { url: currentTrack.url },
     autoPlay: true,
+    on: {
+      canplay: resetRetryState,
+    },
   });
+
+  // Schedule a delayed retry using the package's retry API.
+  const scheduleRetry = useCallback(() => {
+    if (retryAttemptsRef.current >= maxRetryAttempts) return false;
+    clearRetryTimeout();
+    const nextAttempt = retryAttemptsRef.current + 1;
+    retryAttemptsRef.current = nextAttempt;
+    setRetryAttempts(nextAttempt);
+    setRetryPending(true);
+    retryTimeoutRef.current = setTimeout(() => {
+      setRetryPending(false);
+      controls.retry(maxRetryAttempts, retryDelayMs);
+    }, retryDelayMs);
+    return true;
+  }, [clearRetryTimeout, controls, maxRetryAttempts, retryDelayMs]);
+
+  useEffect(() => {
+    if (!state.error || retryPending) return;
+    scheduleRetry();
+  }, [retryPending, scheduleRetry, state.error]);
+
+  // Reset retry state when switching tracks.
+  useEffect(() => {
+    resetRetryState();
+  }, [currentTrackIndex, resetRetryState]);
+
+  // Cleanup any timers on unmount.
+  useEffect(() => () => clearRetryTimeout(), [clearRetryTimeout]);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -90,6 +144,8 @@ export default function App() {
     const ratio = rect.width ? clampedX / rect.width : 0;
     return ratio * duration;
   };
+
+  const retryLimitReached = retryAttempts >= maxRetryAttempts;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-gray-200 p-6">
@@ -281,6 +337,31 @@ export default function App() {
         <div className="text-xs mt-4 text-gray-500 text-center">
           {isLoading ? "Loading stream…" : "Ready"}
         </div>
+
+        {state.error && (
+          <div className="mt-3 text-center">
+            {retryPending && (
+              <p className="text-xs text-amber-300">
+                Retrying in {retryDelayMs / 1000}s (attempt {retryAttempts}/{maxRetryAttempts})
+              </p>
+            )}
+            {retryLimitReached && !retryPending && (
+              <p className="text-xs text-amber-300">
+                Retry limit reached ({maxRetryAttempts} attempts).
+              </p>
+            )}
+            <button
+              onClick={() => {
+                resetRetryState();
+                controls.retry(maxRetryAttempts, retryDelayMs);
+              }}
+              disabled={retryPending}
+              className="mt-2 px-3 py-1 text-xs rounded-full bg-gray-700 hover:bg-gray-600 transition-colors disabled:opacity-50"
+            >
+              Retry now
+            </button>
+          </div>
+        )}
 
         {state.error && (
           <p className="mt-3 text-red-400 text-xs text-center">
