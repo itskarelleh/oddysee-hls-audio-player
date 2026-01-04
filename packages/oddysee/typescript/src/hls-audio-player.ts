@@ -166,7 +166,11 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         });
 
         this.hls.on(HLS.Events.ERROR, (event, data) => {
-            const error = this.mapHlsError(data);
+            const normalized = this.normalizeHlsErrorData(data);
+            if (!normalized) {
+                return;
+            }
+            const error = this.mapHlsError(normalized);
             this.emit('error', error);
         });
 
@@ -222,9 +226,36 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
                 return { code: 'MEDIA_ERROR', message: 'Media error occurred', details: data };
             case HLS.ErrorTypes.MUX_ERROR:
                 return { code: 'FORMAT_NOT_SUPPORTED', message: 'Format not supported', details: data };
+            case HLS.ErrorTypes.OTHER_ERROR:
+                return { code: 'UNKNOWN_ERROR', message: 'An unknown error occurred', details: data };
             default:
                 return { code: 'UNKNOWN_ERROR', message: 'An unknown error occurred', details: data };
         }
+    }
+
+    private normalizeHlsErrorData(data: unknown): Record<string, any> | null {
+        if (!data) return null;
+        if (typeof data !== 'object') {
+            return { type: HLS.ErrorTypes.OTHER_ERROR, details: String(data) };
+        }
+
+        if (Array.isArray(data)) {
+            return { type: HLS.ErrorTypes.OTHER_ERROR, details: 'HLS error array', raw: data };
+        }
+
+        const record = data as Record<string, any>;
+        if (Object.keys(record).length === 0) {
+            return null;
+        }
+
+        if (!record.type) {
+            record.type = HLS.ErrorTypes.OTHER_ERROR;
+        }
+        if (!record.details && record.error instanceof Error && record.error.message) {
+            record.details = record.error.message;
+        }
+
+        return record;
     }
 
     /**
@@ -271,8 +302,12 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             });
 
             this.hls.on(HLS.Events.ERROR, (event, data) => {
+                const normalized = this.normalizeHlsErrorData(data);
+                if (!normalized) {
+                    return;
+                }
                 this._loading = false;
-                this._error = this.mapHlsError(data);
+                this._error = this.mapHlsError(normalized);
                 reject(this._error);
             });
 
