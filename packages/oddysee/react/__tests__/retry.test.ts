@@ -96,7 +96,7 @@ const MockHLSAudioPlayer = vi.hoisted(() => {
   }
 })
 
-vi.mock('../../typescript/src/index', () => ({
+vi.mock('oddysee-typescript', () => ({
   HLSAudioPlayer: MockHLSAudioPlayer,
 }))
 
