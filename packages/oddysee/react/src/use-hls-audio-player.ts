@@ -109,25 +109,30 @@ export function useHlsAudioPlayer(
   const { config, src, autoPlay, on } = options
 
   const player = useMemo(() => {
+    if (typeof Audio === 'undefined') {
+      return null
+    }
     return new HLSAudioPlayer(config)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const [state, setState] = useState<PlayerState>(
-    () => player.getState() ?? defaultState,
+    () => player?.getState() ?? defaultState,
   )
 
-  const [loading, setLoading] = useState<boolean>(player.loading ?? false)
-  const [error, setError] = useState<PlayerError | null>(player.error ?? null)
-  const [readyState, setReadyState] = useState<number>(player.readyState ?? 0)
-  const [isPlaying, setIsPlaying] = useState<boolean>(player.isPlaying ?? false)
-  const [duration, setDuration] = useState<number>(player.getState()?.duration ?? 0)
-  const [isLoading, setIsLoading] = useState<boolean>(player.loading ?? false)
+  const [loading, setLoading] = useState<boolean>(player?.loading ?? false)
+  const [error, setError] = useState<PlayerError | null>(player?.error ?? null)
+  const [readyState, setReadyState] = useState<number>(player?.readyState ?? 0)
+  const [isPlaying, setIsPlaying] = useState<boolean>(player?.isPlaying ?? false)
+  const [duration, setDuration] = useState<number>(player?.getState()?.duration ?? 0)
+  const [isLoading, setIsLoading] = useState<boolean>(player?.loading ?? false)
   const [isScrubbing, setIsScrubbing] = useState(false)
   const [scrubTime, setScrubTime] = useState(0)
   const scrubTimeRef = useRef(0)
 
   useEffect(() => {
+    if (!player) return
+
     const handleStateChange = () => {
       const next = player.getState()
       setState(next)
@@ -200,7 +205,7 @@ export function useHlsAudioPlayer(
   useEffect(() => {
     let cancelled = false
 
-    if (!src) return
+    if (!player || !src) return
 
     player
       .setSource(src.url, src.options)
@@ -221,6 +226,8 @@ export function useHlsAudioPlayer(
   }, [player, src?.url, src?.options, autoPlay])
 
   useEffect(() => {
+    if (!player) return
+
     return () => {
       player.destroy()
     }
@@ -229,6 +236,7 @@ export function useHlsAudioPlayer(
   const controls = useMemo(
     () => ({
       setSource: async (url: string, options?: SourceOptions) => {
+        if (!player) return null
         try {
           const p = await player.setSource(url, options)
           if (autoPlay) {
@@ -240,9 +248,11 @@ export function useHlsAudioPlayer(
         }
       },
       play: () => {
+        if (!player) return
         player.play()
       },
       playAsync: async () => {
+        if (!player) return null
         try {
           const p = await player.playAsync()
           return p
@@ -251,24 +261,34 @@ export function useHlsAudioPlayer(
         }
       },
       pause: () => {
+        if (!player) return
         player.pause()
       },
       setVolume: (volume: number) => {
+        if (!player) return
         player.setVolume(volume)
         const next = player.getState()
         setState(next)
       },
       setCurrentTime: (time: number) => {
+        if (!player) return
         const audioElement = player.getAudioElement()
         audioElement.currentTime = time
       },
-      beginSeek:() =>
-        player.beginSeek(),
-      updateSeek: (time: number) =>
-        player.updateSeek(time),
-      commitSeek: () =>
-        player.commitSeek(),
+      beginSeek: () => {
+        if (!player) return
+        player.beginSeek()
+      },
+      updateSeek: (time: number) => {
+        if (!player) return
+        player.updateSeek(time)
+      },
+      commitSeek: () => {
+        if (!player) return
+        player.commitSeek()
+      },
       retry: (count?: number, interval?: number) => {
+        if (!player) return
         player.retry(count, interval)
       },
     }),
@@ -276,7 +296,7 @@ export function useHlsAudioPlayer(
   )
 
   const beginScrub = useCallback(() => {
-    if (!state.duration) return
+    if (!player || !state.duration) return
     setIsScrubbing(true)
     scrubTimeRef.current = state.currentTime
     setScrubTime(state.currentTime)
@@ -290,7 +310,7 @@ export function useHlsAudioPlayer(
 
   const commitScrub = useCallback(
     (time?: number) => {
-      if (!isScrubbing) return
+      if (!player || !isScrubbing) return
       if (typeof time === 'number' && !Number.isNaN(time)) {
         scrubTimeRef.current = time
         setScrubTime(time)
