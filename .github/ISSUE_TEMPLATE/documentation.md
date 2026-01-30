@@ -11,6 +11,7 @@ assignees: ''
 What documentation needs to be improved or fixed?
 
 ## Issue Type
+- [ ] New documentation file
 - [ ] Missing information
 - [ ] Outdated content
 - [ ] Unclear explanation
