@@ -240,10 +240,6 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
                 this.staleMedia = true;
             }
         });
-
-        //TODO: add listener for suspended data
-
-        //TODO: add listener for waiting data
     }
 
     private setupLifecycleEvents(): void {
