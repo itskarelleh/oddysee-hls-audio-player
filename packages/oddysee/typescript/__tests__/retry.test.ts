@@ -65,11 +65,7 @@ describe('player.retry()', () => {
 
     it('should not retry if there is no track/source', () => {
         const player = new HLSAudioPlayer({});
-        // player.retry();
-
-        console.log(player.retry);
-
-        // expect(player.retry).not.toHaveBeenCalled();
+        expect(() => player.retry()).not.toThrow();
     });
 
 });
