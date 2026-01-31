@@ -13,6 +13,7 @@ export interface PlayerConfig {
     playback?: {
         autoPlay?: boolean;
         startTime?: number;
+        staleAfterMs?: number;
     };
 }
 

@@ -59,6 +59,11 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private seekPreviewTime: number | null = null;
     private retryCount: number;
     private retryInterval: number = 1000;
+    private hasPlayedOnce: boolean = false;
+    private lastPausedAt: number | null = null;
+    private lastVisibilityHiddenAt: number | null = null;
+    private staleMedia: boolean = false;
+    private staleAfterMs: number;
 
     get loading(): boolean {
         return this._loading;
@@ -79,11 +84,13 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     constructor(config: PlayerConfig = {}) {
         this.config = config;
         this.retryCount = config.network?.retryCount ?? 2;
+        this.staleAfterMs = config.playback?.staleAfterMs ?? 5 * 60 * 1000;
         this.audioElement = new Audio();
         this.hls = new HLS(this.mapConfigToHLS(config));
 
         this.setupHlsEvents();
         this.setupAudioEvents();
+        this.setupLifecycleEvents();
     }
 
     beginSeek() {
@@ -162,6 +169,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
     private setupHlsEvents(): void {
         this.hls.on(HLS.Events.MANIFEST_PARSED, () => {
+            this.staleMedia = false;
             this.emit('playlist-ready', undefined);
         });
 
@@ -182,10 +190,16 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private setupAudioEvents(): void {
         this.audioElement.addEventListener('play', () => {
             this._isPlaying = true;
+            this.hasPlayedOnce = true;
+            this.lastPausedAt = null;
+            this.staleMedia = false;
+            this.markActivity();
             this.emit('play', undefined);
         });
         this.audioElement.addEventListener('pause', () => {
             this._isPlaying = false;
+            this.lastPausedAt = Date.now();
+            this.markActivity();
             this.emit('pause', undefined);
         });
         this.audioElement.addEventListener('ended', () =>
@@ -193,10 +207,12 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         );
         this.audioElement.addEventListener('loadedmetadata', () => {
             this.updateCurrentTrack();
+            this.markActivity();
             this.emit('loadedmetadata', this.currentTrack || null);
         });
         this.audioElement.addEventListener('timeupdate', () => {
             this.updateCurrentTrack();
+            this.markActivity();
             this.emit('timeupdate', {
                 currentTime: this.audioElement.currentTime,
                 duration: isNaN(this.audioElement.duration)
@@ -206,14 +222,88 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         });
         this.audioElement.addEventListener('canplay', () => {
             this._loading = false;
+            this.staleMedia = false;
+            this.markActivity();
             this.emit('canplay', undefined);
         });
+
+        this.audioElement.addEventListener('stalled', () => {
+            this.staleMedia = true;
+        });
+
+        this.audioElement.addEventListener('suspend', () => {
+            this.staleMedia = true;
+        });
+
+        this.audioElement.addEventListener('waiting', () => {
+            if (this.audioElement.paused) {
+                this.staleMedia = true;
+            }
+        });
+
+        //TODO: add listener for suspended data
+
+        //TODO: add listener for waiting data
+    }
+
+    private setupLifecycleEvents(): void {
+        if (typeof document === 'undefined') return;
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.lastVisibilityHiddenAt = Date.now();
+            }
+        });
+    }
+
+    private markActivity(): void {
+        this.lastVisibilityHiddenAt = null;
+    }
+
+    private getIdleDurationMs(): number {
+        if (this.lastPausedAt) {
+            return Date.now() - this.lastPausedAt;
+        }
+
+        if (this.lastVisibilityHiddenAt) {
+            return Date.now() - this.lastVisibilityHiddenAt;
+        }
+
+        return 0;
+    }
+
+    private shouldRefreshBeforeResume(): boolean {
+        if (!this.currentTrack) return false;
+        if (!this.audioElement.paused) return false;
+        if (!this.hasPlayedOnce) return false;
+
+        const idleMs = this.getIdleDurationMs();
+        if (idleMs >= this.staleAfterMs) {
+            return true;
+        }
+
+        return this.staleMedia;
+    }
+
+    private async refreshSourceForResume(): Promise<void> {
+        if (!this.currentTrack) return;
+        const resumeTime = this.audioElement.currentTime;
+        const sourceOptions: SourceOptions = {
+            ...this.currentTrack,
+            startTime: resumeTime,
+        };
+
+        this.staleMedia = false;
+        await this.setSource(this.currentTrack.url, sourceOptions);
     }
 
     private updateCurrentTrack(): void {
         if (this.currentTrack) {
             this.currentTrack.currentTime = this.audioElement.currentTime;
-            this.currentTrack.duration = this.audioElement.duration || undefined;
+            const duration = this.audioElement.duration;
+            if (typeof duration === 'number' && isFinite(duration)) {
+                this.currentTrack.duration = duration;
+            }
         }
     }
 
@@ -267,7 +357,15 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     async setSource(url: string, options?: SourceOptions): Promise<HLSAudioPlayer> {
         this._loading = true;
         this._error = null;
+        this.staleMedia = false;
+        this.hasPlayedOnce = false;
+        this.lastPausedAt = null;
         this.emit('loading', undefined);
+
+        const startTime =
+            typeof options?.startTime === 'number' && isFinite(options.startTime)
+                ? options.startTime
+                : undefined;
 
         return new Promise((resolve, reject) => {
             // Pause current playback and reset audio element state
@@ -298,6 +396,9 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             this.hls.attachMedia(this.audioElement);
 
             this.hls.on(HLS.Events.MANIFEST_PARSED, () => {
+                if (typeof startTime === 'number' && startTime > 0) {
+                    this.audioElement.currentTime = startTime;
+                }
                 resolve(this);
             });
 
@@ -312,11 +413,12 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             });
 
             this.hls.loadSource(url);
-            this.currentTrack = { 
-                id: url, 
-                url, 
-                title: url.split('/').pop(),
-                currentTime: 0
+            this.currentTrack = {
+                id: (options as Track | undefined)?.id ?? url,
+                url,
+                title: (options as Track | undefined)?.title ?? url.split('/').pop(),
+                currentTime: startTime ?? 0,
+                duration: (options as Track | undefined)?.duration,
             };
         });
     }
@@ -339,6 +441,9 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
      */
     async playAsync(): Promise<HLSAudioPlayer> {
         try {
+            if (this.shouldRefreshBeforeResume()) {
+                await this.refreshSourceForResume();
+            }
             await this.audioElement.play();
             return this;
         } catch (error: any) {
