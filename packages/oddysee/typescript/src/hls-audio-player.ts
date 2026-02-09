@@ -64,6 +64,10 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private lastVisibilityHiddenAt: number | null = null;
     private staleMedia: boolean = false;
     private staleAfterMs: number;
+    private resumeRequested: boolean = false;
+    private authRecoveryInFlight: boolean = false;
+    private lastAuthRecoveryAt: number | null = null;
+    private authRecoveryCooldownMs: number = 2000;
 
     get loading(): boolean {
         return this._loading;
@@ -178,6 +182,10 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             if (!normalized) {
                 return;
             }
+            if (this.shouldRecoverFromAuthError(normalized)) {
+                void this.handleAuthErrorRecovery(normalized);
+                return;
+            }
             const error = this.mapHlsError(normalized);
             this.emit('error', error);
         });
@@ -193,12 +201,14 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             this.hasPlayedOnce = true;
             this.lastPausedAt = null;
             this.staleMedia = false;
+            this.resumeRequested = false;
             this.markActivity();
             this.emit('play', undefined);
         });
         this.audioElement.addEventListener('pause', () => {
             this._isPlaying = false;
             this.lastPausedAt = Date.now();
+            this.resumeRequested = false;
             this.markActivity();
             this.emit('pause', undefined);
         });
@@ -291,6 +301,84 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
         this.staleMedia = false;
         await this.setSource(this.currentTrack.url, sourceOptions);
+    }
+
+    private extractResponseCode(data: Record<string, any>): number | null {
+        const candidates = [
+            data?.response?.code,
+            data?.response?.status,
+            data?.response?.statusCode,
+            data?.response?.status_code,
+            data?.networkDetails?.status,
+            data?.networkDetails?.statusCode,
+            data?.networkDetails?.response?.status,
+            data?.error?.status,
+            data?.error?.code,
+            data?.details?.status,
+            data?.details?.code,
+        ];
+
+        for (const candidate of candidates) {
+            if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+                return candidate;
+            }
+            if (typeof candidate === 'string') {
+                const parsed = Number.parseInt(candidate, 10);
+                if (!Number.isNaN(parsed)) {
+                    return parsed;
+                }
+            }
+        }
+
+        const message = data?.error?.message ?? data?.details;
+        if (typeof message === 'string') {
+            if (message.includes('401')) return 401;
+            if (message.includes('403')) return 403;
+        }
+
+        return null;
+    }
+
+    private shouldRecoverFromAuthError(data: Record<string, any>): boolean {
+        if (!this.currentTrack) return false;
+        if (this.authRecoveryInFlight) return false;
+        const code = this.extractResponseCode(data);
+        return code === 401 || code === 403;
+    }
+
+    private async handleAuthErrorRecovery(data: Record<string, any>): Promise<void> {
+        if (!this.currentTrack) return;
+        const now = Date.now();
+        if (
+            this.lastAuthRecoveryAt &&
+            now - this.lastAuthRecoveryAt < this.authRecoveryCooldownMs
+        ) {
+            const error = this.mapHlsError(data);
+            this._error = error;
+            this.emit('error', error);
+            return;
+        }
+
+        this.authRecoveryInFlight = true;
+        this.lastAuthRecoveryAt = now;
+        const userPaused =
+            this.audioElement.paused && this.lastPausedAt !== null && !this.resumeRequested;
+        const shouldResume =
+            !userPaused &&
+            (this.resumeRequested || this.hasPlayedOnce || !this.audioElement.paused);
+
+        try {
+            await this.refreshSourceForResume();
+            if (shouldResume) {
+                await this.audioElement.play();
+            }
+        } catch (error) {
+            const mappedError = this.mapHlsError(data);
+            this._error = mappedError;
+            this.emit('error', mappedError);
+        } finally {
+            this.authRecoveryInFlight = false;
+        }
     }
 
     private updateCurrentTrack(): void {
@@ -437,18 +525,26 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
      */
     async playAsync(): Promise<HLSAudioPlayer> {
         try {
+            this.resumeRequested = true;
+            this._isPlaying = true;
             if (this.shouldRefreshBeforeResume()) {
                 await this.refreshSourceForResume();
             }
             await this.audioElement.play();
             return this;
         } catch (error: any) {
+            this.resumeRequested = false;
+            this._isPlaying = false;
             this._error = {
                 code: 'PLAYBACK_ERROR',
                 message: (error && error.message) || 'Playback failed',
             };
             this.emit('error', this._error);
             throw this._error;
+        } finally {
+            if (!this.audioElement.paused) {
+                this.resumeRequested = false;
+            }
         }
     }
 
