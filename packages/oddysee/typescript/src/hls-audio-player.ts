@@ -452,6 +452,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
                 : undefined;
 
         return new Promise((resolve, reject) => {
+            let manifestParsed = false;
             // Pause current playback and reset audio element state
             if (!this.audioElement.paused) {
                 this.audioElement.pause();
@@ -480,6 +481,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             this.hls.attachMedia(this.audioElement);
 
             this.hls.on(HLS.Events.MANIFEST_PARSED, () => {
+                manifestParsed = true;
                 if (typeof startTime === 'number' && startTime > 0) {
                     this.audioElement.currentTime = startTime;
                 }
@@ -487,6 +489,9 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             });
 
             this.hls.on(HLS.Events.ERROR, (event, data) => {
+                if (manifestParsed) {
+                    return;
+                }
                 const normalized = this.normalizeHlsErrorData(data);
                 if (!normalized) {
                     return;
