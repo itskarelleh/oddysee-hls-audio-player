@@ -3,3 +3,5 @@ verdaccio
 
 dist/
 packages/*/dist/
+.early.coverage
+fixture/generated/

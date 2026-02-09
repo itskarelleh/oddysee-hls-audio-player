@@ -1,18 +1,16 @@
-# oddysee-typescript
-
+# Oddysee TypeScript
 Low-level, strongly-typed audio player built on top of [hls.js](https://github.com/video-dev/hls.js), focused on audio streaming. This package does **not** depend on React – it just gives you a clean class API you can wire into any UI.
 
----
+## ⚠️ Status: Beta
+Oddysee is actively evolving. APIs may change, and breaking changes can occur between minor releases.
 
 ## Installation
 
 ```bash
-npm install oddysee-typescript hls.js
+npm install oddysee-typescript
 # or
-yarn add oddysee-typescript hls.js
+yarn add oddysee-typescript
 ```
-
----
 
 ## Quick start
 
@@ -37,8 +35,6 @@ await player.setSource('https://example.com/audio/stream.m3u8');
 player.play();
 ```
 
----
-
 ## Core concepts
 
 - **Player instance** – `new HLSAudioPlayer(config?)` creates and owns an internal `<audio>` element and an `Hls` instance.
@@ -46,8 +42,6 @@ player.play();
 - **Events** – subscribe with `on(event, callback)` to react to playback, errors, time updates, etc.
 - **State** – call `getState()` to read the current track & playback state in one object.
 - **Audio element** – call `getAudioElement()` to integrate with existing UI or audio pipelines.
-
----
 
 ## Configuration
 
@@ -73,8 +67,6 @@ type PlayerConfig = {
 
 All fields are optional – you can start with `new HLSAudioPlayer()` and grow as needed.
 
----
-
 ## Loading a source
 
 ```ts
@@ -89,8 +81,6 @@ await player.setSource('https://example.com/audio/stream.m3u8', {
 ```
 
 `setSource` returns a `Promise<HLSAudioPlayer>` and resolves when the manifest is parsed and the playlist is ready.
-
----
 
 ## Listening to events
 
@@ -128,8 +118,6 @@ player.on('pause', onPause);
 player.off('pause', onPause);
 ```
 
----
-
 ## Reading state
 
 Use `getState()` when you need a snapshot of the current player state (e.g. in a polling loop or to initialize UI):
@@ -151,8 +139,6 @@ You can still call `getCurrentTrack()` directly if you only care about the track
 ```ts
 const track = player.getCurrentTrack();
 ```
-
----
 
 ## Controlling playback & quality
 
@@ -176,8 +162,6 @@ player.setQuality(levels[0].id);
 player.setQuality('high');
 ```
 
----
-
 ## Accessing the underlying `<audio>` element
 
 If you need direct access to the `HTMLAudioElement` (for attaching to your DOM, using Web Audio API, etc.):
@@ -194,8 +178,6 @@ audioElement.playbackRate = 1.25;
 
 The core class manages this element’s lifecycle, so prefer using the `player` methods for playback/volume when possible.
 
----
-
 ## Cleanup
 
 ```ts
@@ -210,8 +192,6 @@ player.destroy();
 
 You can safely call `destroy()` multiple times; extra calls are ignored.
 
----
-
 ## TypeScript support
 
 This package ships with TypeScript types out of the box, including:
@@ -222,3 +202,5 @@ This package ships with TypeScript types out of the box, including:
 
 These types make it straightforward to build your own providers, hooks, or UI components on top of the core player.
 
+## License
+MIT

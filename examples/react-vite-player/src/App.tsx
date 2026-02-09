@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useHlsAudioPlayer } from "oddysee-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useHlsAudioPlayer } from '../../../packages/oddysee/react/src/use-hls-audio-player'
+// from "oddysee-react";
 import {
   Play,
   Pause,
@@ -46,11 +47,65 @@ export default function App() {
 
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const currentTrack = playlist[currentTrackIndex];
+  const maxRetryAttempts = 3;
+  const retryDelayMs = 1500;
+  // Retry bookkeeping lives in the component so the UI can reflect it.
+  const [retryAttempts, setRetryAttempts] = useState(0);
+  const [retryPending, setRetryPending] = useState(false);
+  const retryAttemptsRef = useRef(0);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { state, controls, isLoading, isPlaying } = useHlsAudioPlayer({
+  // Clear any pending retry timer and update the UI state.
+  const clearRetryTimeout = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+    setRetryPending(false);
+  }, []);
+
+  // Reset retry counters when playback succeeds or the track changes.
+  const resetRetryState = useCallback(() => {
+    retryAttemptsRef.current = 0;
+    setRetryAttempts(0);
+    clearRetryTimeout();
+  }, [clearRetryTimeout]);
+
+  const { state, controls, isLoading, isPlaying, scrub } = useHlsAudioPlayer({
     src: { url: currentTrack.url },
     autoPlay: true,
+    on: {
+      canplay: resetRetryState,
+    },
   });
+
+  // Schedule a delayed retry using the package's retry API.
+  const scheduleRetry = useCallback(() => {
+    if (retryAttemptsRef.current >= maxRetryAttempts) return false;
+    clearRetryTimeout();
+    const nextAttempt = retryAttemptsRef.current + 1;
+    retryAttemptsRef.current = nextAttempt;
+    setRetryAttempts(nextAttempt);
+    setRetryPending(true);
+    retryTimeoutRef.current = setTimeout(() => {
+      setRetryPending(false);
+      controls.retry(maxRetryAttempts, retryDelayMs);
+    }, retryDelayMs);
+    return true;
+  }, [clearRetryTimeout, controls, maxRetryAttempts, retryDelayMs]);
+
+  useEffect(() => {
+    if (!state.error || retryPending) return;
+    scheduleRetry();
+  }, [retryPending, scheduleRetry, state.error]);
+
+  // Reset retry state when switching tracks.
+  useEffect(() => {
+    resetRetryState();
+  }, [currentTrackIndex, resetRetryState]);
+
+  // Cleanup any timers on unmount.
+  useEffect(() => () => clearRetryTimeout(), [clearRetryTimeout]);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -62,17 +117,35 @@ export default function App() {
 
   const playTrack = (index: number) => {
     setCurrentTrackIndex(index);
+    controls.setSource(currentTrack.url);
   };
 
   const playPrevious = () => {
     const newIndex = currentTrackIndex === 0 ? playlist.length - 1 : currentTrackIndex - 1;
     setCurrentTrackIndex(newIndex);
+    controls.setSource(playlist[newIndex].url);
   };
 
   const playNext = () => {
     const newIndex = (currentTrackIndex + 1) % playlist.length;
     setCurrentTrackIndex(newIndex);
+    controls.setSource(playlist[newIndex].url);
   };
+
+  const duration = state.duration ?? 0;
+  const scrubberRef = useRef<HTMLDivElement | null>(null);
+  const progressPercent = duration
+    ? Math.min(100, Math.max(0, (scrub.displayTime / duration) * 100))
+    : 0;
+
+  const getTimeFromClientX = (clientX: number, element: HTMLDivElement) => {
+    const rect = element.getBoundingClientRect();
+    const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+    const ratio = rect.width ? clampedX / rect.width : 0;
+    return ratio * duration;
+  };
+
+  const retryLimitReached = retryAttempts >= maxRetryAttempts;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-gray-200 p-6">
@@ -163,21 +236,80 @@ export default function App() {
 
         {/* Progress */}
         <div className="mt-6">
-          <input
-            type="range"
-            min={0}
-            max={state.duration ?? 0}
-            value={state.currentTime}
-            onChange={(e) =>
-              controls.setCurrentTime(Number(e.target.value))
-            }
-            className="w-full cursor-pointer accent-teal-300"
-          />
+          <div
+            ref={scrubberRef}
+            role="slider"
+            aria-label="Seek"
+            aria-valuemin={0}
+            aria-valuemax={duration}
+            aria-valuenow={scrub.displayTime}
+            tabIndex={duration ? 0 : -1}
+            data-scrubber="custom"
+            className={`relative ${
+              duration ? "cursor-pointer" : "opacity-50"
+            }`}
+            style={{
+              height: 12,
+              width: "100%",
+              borderRadius: 9999,
+              backgroundColor: "#374151",
+              position: "relative",
+            }}
+            onPointerDown={(event) => {
+              if (!duration || !scrubberRef.current) return;
+              scrub.begin();
+              const nextTime = getTimeFromClientX(event.clientX, scrubberRef.current);
+              scrub.update(nextTime);
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onPointerMove={(event) => {
+              if (!scrub.isScrubbing || !scrubberRef.current) return;
+              const nextTime = getTimeFromClientX(event.clientX, scrubberRef.current);
+              scrub.update(nextTime);
+            }}
+            onPointerUp={(event) => {
+              if (!scrubberRef.current) return;
+              const nextTime = getTimeFromClientX(event.clientX, scrubberRef.current);
+              scrub.commit(nextTime);
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }}
+            onPointerCancel={(event) => {
+              if (!scrubberRef.current) return;
+              const nextTime = getTimeFromClientX(event.clientX, scrubberRef.current);
+              scrub.commit(nextTime);
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                height: "100%",
+                width: `${progressPercent}%`,
+                borderRadius: 9999,
+                backgroundColor: "#2dd4bf",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                height: 16,
+                width: 16,
+                transform: "translateY(-50%)",
+                borderRadius: 9999,
+                backgroundColor: "#99f6e4",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.35)",
+                left: `calc(${progressPercent}% - 8px)`,
+              }}
+            />
+          </div>
           <div className="flex justify-between text-xs text-gray-400 mt-1">
-            <span>{state.currentTime.toFixed(0)}s</span>
+            <span>{scrub.displayTime.toFixed(0)}s</span>
             <span>
-              {state.duration
-                ? `${state.duration.toFixed(0)}s`
+              {duration
+                ? `${duration.toFixed(0)}s`
                 : "--"}
             </span>
           </div>
@@ -205,6 +337,31 @@ export default function App() {
         <div className="text-xs mt-4 text-gray-500 text-center">
           {isLoading ? "Loading stream…" : "Ready"}
         </div>
+
+        {state.error && (
+          <div className="mt-3 text-center">
+            {retryPending && (
+              <p className="text-xs text-amber-300">
+                Retrying in {retryDelayMs / 1000}s (attempt {retryAttempts}/{maxRetryAttempts})
+              </p>
+            )}
+            {retryLimitReached && !retryPending && (
+              <p className="text-xs text-amber-300">
+                Retry limit reached ({maxRetryAttempts} attempts).
+              </p>
+            )}
+            <button
+              onClick={() => {
+                resetRetryState();
+                controls.retry(maxRetryAttempts, retryDelayMs);
+              }}
+              disabled={retryPending}
+              className="mt-2 px-3 py-1 text-xs rounded-full bg-gray-700 hover:bg-gray-600 transition-colors disabled:opacity-50"
+            >
+              Retry now
+            </button>
+          </div>
+        )}
 
         {state.error && (
           <p className="mt-3 text-red-400 text-xs text-center">

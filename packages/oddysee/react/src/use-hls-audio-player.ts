@@ -1,4 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type PointerEvent,
+  type MouseEvent,
+  type TouchEvent,
+} from 'react'
 import {
   HLSAudioPlayer,
   type HLSAudioPlayerInterface,
@@ -9,7 +19,8 @@ import {
   type Track,
   type QualityLevel,
   type PlayerState
-} from 'oddysee-typescript'
+} 
+from 'oddysee-typescript'
 
 // Local mirror of the core's PlayerEventMap so we don't depend on it being exported
 export type PlayerEventMap = {
@@ -43,6 +54,27 @@ export interface UseHlsAudioPlayerResult {
   loading: boolean
   error: PlayerError | null
   readyState: number
+  scrub: {
+    isScrubbing: boolean
+    displayTime: number
+    begin: () => void
+    update: (time: number) => void
+    commit: (time?: number) => void
+  }
+  seekBar: {
+    isScrubbing: boolean
+    displayTime: number
+    onChange: (event: ChangeEvent<HTMLInputElement>) => void
+    onPointerDown: () => void
+    onPointerUp: (event: PointerEvent<HTMLInputElement>) => void
+    onPointerCancel: () => void
+    onMouseDown: () => void
+    onMouseUp: (event: MouseEvent<HTMLInputElement>) => void
+    onTouchStart: () => void
+    onTouchEnd: (event: TouchEvent<HTMLInputElement>) => void
+    onFocus: () => void
+    onBlur: () => void
+  }
   controls: {
     setSource: (
       url: string,
@@ -53,6 +85,10 @@ export interface UseHlsAudioPlayerResult {
     pause: () => void
     setVolume: (volume: number) => void
     setCurrentTime: (time: number) => void
+    beginSeek: () => void
+    updateSeek: (time: number) => void
+    commitSeek: () => void
+    retry: (count?: number, interval?: number) => void
   }
 }
 
@@ -73,22 +109,30 @@ export function useHlsAudioPlayer(
   const { config, src, autoPlay, on } = options
 
   const player = useMemo(() => {
+    if (typeof Audio === 'undefined') {
+      return null
+    }
     return new HLSAudioPlayer(config)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const [state, setState] = useState<PlayerState>(
-    () => player.getState() ?? defaultState,
+    () => player?.getState() ?? defaultState,
   )
 
-  const [loading, setLoading] = useState<boolean>(player.loading ?? false)
-  const [error, setError] = useState<PlayerError | null>(player.error ?? null)
-  const [readyState, setReadyState] = useState<number>(player.readyState ?? 0)
-  const [isPlaying, setIsPlaying] = useState<boolean>(player.isPlaying ?? false)
-  const [duration, setDuration] = useState<number>(player.getState()?.duration ?? 0)
-  const [isLoading, setIsLoading] = useState<boolean>(player.loading ?? false)
+  const [loading, setLoading] = useState<boolean>(player?.loading ?? false)
+  const [error, setError] = useState<PlayerError | null>(player?.error ?? null)
+  const [readyState, setReadyState] = useState<number>(player?.readyState ?? 0)
+  const [isPlaying, setIsPlaying] = useState<boolean>(player?.isPlaying ?? false)
+  const [duration, setDuration] = useState<number>(player?.getState()?.duration ?? 0)
+  const [isLoading, setIsLoading] = useState<boolean>(player?.loading ?? false)
+  const [isScrubbing, setIsScrubbing] = useState(false)
+  const [scrubTime, setScrubTime] = useState(0)
+  const scrubTimeRef = useRef(0)
 
   useEffect(() => {
+    if (!player) return
+
     const handleStateChange = () => {
       const next = player.getState()
       setState(next)
@@ -161,7 +205,7 @@ export function useHlsAudioPlayer(
   useEffect(() => {
     let cancelled = false
 
-    if (!src) return
+    if (!player || !src) return
 
     player
       .setSource(src.url, src.options)
@@ -182,6 +226,8 @@ export function useHlsAudioPlayer(
   }, [player, src?.url, src?.options, autoPlay])
 
   useEffect(() => {
+    if (!player) return
+
     return () => {
       player.destroy()
     }
@@ -190,6 +236,7 @@ export function useHlsAudioPlayer(
   const controls = useMemo(
     () => ({
       setSource: async (url: string, options?: SourceOptions) => {
+        if (!player) return null
         try {
           const p = await player.setSource(url, options)
           if (autoPlay) {
@@ -201,9 +248,11 @@ export function useHlsAudioPlayer(
         }
       },
       play: () => {
+        if (!player) return
         player.play()
       },
       playAsync: async () => {
+        if (!player) return null
         try {
           const p = await player.playAsync()
           return p
@@ -212,19 +261,75 @@ export function useHlsAudioPlayer(
         }
       },
       pause: () => {
+        if (!player) return
         player.pause()
       },
       setVolume: (volume: number) => {
+        if (!player) return
         player.setVolume(volume)
         const next = player.getState()
         setState(next)
       },
       setCurrentTime: (time: number) => {
+        if (!player) return
         const audioElement = player.getAudioElement()
         audioElement.currentTime = time
       },
+      beginSeek: () => {
+        if (!player) return
+        player.beginSeek()
+      },
+      updateSeek: (time: number) => {
+        if (!player) return
+        player.updateSeek(time)
+      },
+      commitSeek: () => {
+        if (!player) return
+        player.commitSeek()
+      },
+      retry: (count?: number, interval?: number) => {
+        if (!player) return
+        player.retry(count, interval)
+      },
     }),
     [player, autoPlay],
+  )
+
+  const beginScrub = useCallback(() => {
+    if (!player || !state.duration) return
+    setIsScrubbing(true)
+    scrubTimeRef.current = state.currentTime
+    setScrubTime(state.currentTime)
+    player.beginSeek()
+  }, [player, state.currentTime, state.duration])
+
+  const updateScrub = useCallback((time: number) => {
+    scrubTimeRef.current = time
+    setScrubTime(time)
+  }, [])
+
+  const commitScrub = useCallback(
+    (time?: number) => {
+      if (!player || !isScrubbing) return
+      if (typeof time === 'number' && !Number.isNaN(time)) {
+        scrubTimeRef.current = time
+        setScrubTime(time)
+      }
+      setIsScrubbing(false)
+      player.updateSeek(scrubTimeRef.current)
+      player.commitSeek()
+    },
+    [player, isScrubbing],
+  )
+
+  const commitScrubFromElement = useCallback(
+    (element: HTMLInputElement) => {
+      requestAnimationFrame(() => {
+        const nextTime = Number(element.value)
+        commitScrub(nextTime)
+      })
+    },
+    [commitScrub],
   )
 
   return {
@@ -236,6 +341,59 @@ export function useHlsAudioPlayer(
     loading,
     error,
     readyState,
-    controls,
+    seekBar: {
+      isScrubbing,
+      displayTime: isScrubbing ? scrubTime : state.currentTime,
+      onChange: (event: ChangeEvent<HTMLInputElement>) => {
+        const nextTime = Number(event.target.value)
+        if (!isScrubbing) {
+          beginScrub()
+        }
+        updateScrub(nextTime)
+      },
+      onPointerDown: () => {
+        if (!isScrubbing) {
+          beginScrub()
+        }
+      },
+      onPointerUp: (event: PointerEvent<HTMLInputElement>) => {
+        commitScrubFromElement(event.currentTarget)
+      },
+      onPointerCancel: () => {
+        commitScrub()
+      },
+      onMouseDown: () => {
+        if (!isScrubbing) {
+          beginScrub()
+        }
+      },
+      onMouseUp: (event: MouseEvent<HTMLInputElement>) => {
+        commitScrubFromElement(event.currentTarget)
+      },
+      onTouchStart: () => {
+        if (!isScrubbing) {
+          beginScrub()
+        }
+      },
+      onTouchEnd: (event: TouchEvent<HTMLInputElement>) => {
+        commitScrubFromElement(event.currentTarget)
+      },
+      onFocus: () => {
+        if (!isScrubbing) {
+          beginScrub()
+        }
+      },
+      onBlur: () => {
+        commitScrub()
+      },
+    },
+    scrub: {
+      isScrubbing,
+      displayTime: isScrubbing ? scrubTime : state.currentTime,
+      begin: beginScrub,
+      update: updateScrub,
+      commit: commitScrub,
+    },
+    controls
   }
 }
