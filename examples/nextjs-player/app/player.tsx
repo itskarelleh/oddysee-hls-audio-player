@@ -23,6 +23,12 @@ import { cn } from "@/lib/utils";
 export default function Player() {
   const playlist = [
     {
+      id: 0,
+      url: "http://localhost:8787/master.m3u8",
+      title: "Signed Fixture (Local)",
+      description: "Local signed-segment HLS fixture (requires fixture server)",
+    },
+    {
       id: 1,
       url: "https://pl.streamingvideoprovider.com/mp3-playlist/playlist.m3u8",
       title: "MP3 Music Playlist",
