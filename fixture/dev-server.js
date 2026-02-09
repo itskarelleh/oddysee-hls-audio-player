@@ -33,6 +33,9 @@ function isValidSignature(pathname, exp, sig) {
 function respond(res, status, body, headers = {}) {
   res.writeHead(status, {
     'Cache-Control': 'no-store',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Range',
     ...headers,
   });
   res.end(body);
@@ -73,6 +76,10 @@ function parseUrl(req) {
 const server = http.createServer(async (req, res) => {
   const url = parseUrl(req);
   const { pathname } = url;
+
+  if (req.method === 'OPTIONS') {
+    return respond(res, 204, '');
+  }
 
   if (req.method !== 'GET') {
     return respond(res, 405, 'Method Not Allowed');
@@ -125,6 +132,9 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, {
       'Content-Type': 'video/MP2T',
       'Cache-Control': 'no-store',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Range',
     });
 
     return fs.createReadStream(resolvedSegmentPath).pipe(res);
