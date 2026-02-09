@@ -136,6 +136,23 @@ Video-first / adaptive streaming: If you need more advanced streaming capabiliti
 
 **If none of that worked and you're sure you need an audio only solution for your hls audio, open an issue and we'll help you out 😊**
 
+## Signed HLS Fixture (Local Dev)
+
+To simulate authenticated HLS providers with expiring segment URLs, use the local signed-segment fixture:
+
+```bash
+./fixture/generate-hls.sh
+node fixture/dev-server.js
+```
+
+Then point your player at:
+
+```text
+http://localhost:8787/master.m3u8
+```
+
+See `fixture/README.md` for details and configuration options.
+
 ## Origin Story
 
 This library exists because of a classic developer “what just happened?!” moment: SoundCloud rolled out an update, and suddenly nothing was working anymore. MP3s, WAVs — all the usual endpoints were busted. The only thing that still worked was the HLS/AAC streams (.m3u8).
