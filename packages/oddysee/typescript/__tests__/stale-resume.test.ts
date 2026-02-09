@@ -3,6 +3,8 @@ import { HLSAudioPlayer } from '../src/hls-audio-player';
 
 type HandlerMap = Record<string, Array<(event: string, data: any) => void>>;
 
+let lastInstance: any;
+
 vi.mock('hls.js', () => {
     class MockHls {
         static Events = {
@@ -30,6 +32,10 @@ vi.mock('hls.js', () => {
             this.trigger('MANIFEST_PARSED', {});
         });
         destroy = vi.fn();
+
+        constructor() {
+            lastInstance = this;
+        }
 
         trigger(event: string, data: any) {
             const handlers = this.handlers[event];
@@ -80,6 +86,8 @@ beforeEach(() => {
     vi.setSystemTime(new Date('2026-01-31T12:00:00.000Z'));
     OriginalAudio = (globalThis as any).Audio;
     OriginalDocument = (globalThis as any).document;
+    lastInstance = null;
+    lastInstance = null;
     (globalThis as any).Audio = MockAudio;
     (globalThis as any).document = {
         hidden: false,
@@ -194,6 +202,31 @@ describe('stale resume gate', () => {
         await player.playAsync();
 
         expect(setSourceSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('recovers on auth error by refreshing source and resuming', async () => {
+        const player = new HLSAudioPlayer({ playback: { staleAfterMs: 60000 } });
+        const setSourceSpy = vi.spyOn(player, 'setSource');
+
+        await player.setSource('https://example.com/stream.m3u8');
+
+        const audio = player.getAudioElement() as unknown as MockAudio;
+        audio.currentTime = 33;
+        await player.playAsync();
+        audio.trigger('play');
+
+        const hlsInstance = lastInstance as any;
+        hlsInstance?.trigger('ERROR', {
+            type: 'NETWORK_ERROR',
+            response: { code: 401 },
+        });
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(setSourceSpy).toHaveBeenCalledTimes(2);
+        const refreshArgs = setSourceSpy.mock.calls[1];
+        expect(refreshArgs?.[1]).toMatchObject({ startTime: 33 });
     });
 });
 

@@ -9,7 +9,7 @@ const PORT = Number(process.env.PORT || 8787);
 const GENERATED_DIR = process.env.HLS_DIR || path.join(__dirname, 'generated');
 const AUDIO_PLAYLIST = process.env.HLS_PLAYLIST || 'audio.m3u8';
 const SIGNING_SECRET = process.env.SIGNING_SECRET || 'oddysee-dev-secret';
-const SIGN_TTL_SECONDS = Number(process.env.SIGN_TTL_SECONDS || 12);
+const SIGN_TTL_SECONDS = Number(process.env.SIGN_TTL_SECONDS || 60);
 
 function base64url(buffer) {
   return buffer.toString('base64url');
