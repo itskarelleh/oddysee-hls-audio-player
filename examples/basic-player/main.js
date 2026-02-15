@@ -1,13 +1,10 @@
 import './style.css'
-import { HLSAudioPlayer } from '../../packages/oddysee/typescript/src/index';
-// import { HLSAudioPlayer } from 'oddysee-typescript';
-
+import { HLSAudioPlayer } from 'oddysee-typescript';
 
 class BasicPlayerApp {
     constructor() {
         this.player = null;
         this.eventCallbacks = {}; // Store event callbacks for proper cleanup
-        this.isPlaying = false; // Track playback state for combined play/pause button
         this.playlist = [];
         this.currentTrackIndex = -1;
         this.lastLoadMode = 'basic';
@@ -152,7 +149,6 @@ class BasicPlayerApp {
             }
             
             this.player = null;
-            this.isPlaying = false; // Reset playback state
             
             // Clear time display
             const timeElement = document.getElementById('timeDisplay');
@@ -204,11 +200,11 @@ class BasicPlayerApp {
             this.updateTrackInfo(streamTitle);
             
             if (autoPlay) {
-                // Auto-play after successful load
+                // Auto-play after successful load using playAsync for proper error handling
                 this.logEvent('🎵 Auto-playing stream...');
-                this.player.play();
+                await this.player.playAsync();
             }
-            
+
         } catch (error) {
             this.logEvent(`❌ ERROR: ${error.message}`, 'error');
             console.error('Stream load error:', error);
@@ -262,9 +258,9 @@ class BasicPlayerApp {
             this.updateTrackInfo(streamTitle);
             
             if (autoPlay) {
-                // Auto-play after successful load
+                // Auto-play after successful load using playAsync for proper error handling
                 this.logEvent('🎵 Auto-playing stream with headers...');
-                this.player.play();
+                await this.player.playAsync();
             }
             
         } catch (error) {
@@ -339,7 +335,6 @@ class BasicPlayerApp {
             const streamTitle = this.getStreamTitle(this.streamUrlInput.value);
             this.logEvent(`▶️ Playback started: ${streamTitle}`);
             this.updateStatus('Playing');
-            this.isPlaying = true;
             this.updatePlayPauseButton();
         };
         this.player.on('play', this.eventCallbacks.play);
@@ -348,7 +343,6 @@ class BasicPlayerApp {
             const streamTitle = this.getStreamTitle(this.streamUrlInput.value);
             this.logEvent(`⏸️ Playback paused: ${streamTitle}`);
             this.updateStatus('Paused');
-            this.isPlaying = false;
             this.updatePlayPauseButton();
         };
         this.player.on('pause', this.eventCallbacks.pause);
@@ -381,7 +375,7 @@ class BasicPlayerApp {
 
     togglePlayPause() {
         if (this.player) {
-            if (this.isPlaying) {
+            if (this.player.isPlaying) {
                 this.player.pause();
             } else {
                 this.player.play();
@@ -390,8 +384,8 @@ class BasicPlayerApp {
     }
 
     updatePlayPauseButton() {
-        if (this.playPauseBtn) {
-            if (this.isPlaying) {
+        if (this.playPauseBtn && this.player) {
+            if (this.player.isPlaying) {
                 this.playPauseBtn.textContent = '⏸';
                 this.playPauseBtn.title = 'Pause playback';
                 this.playPauseBtn.setAttribute('aria-label', 'Pause playback');
@@ -415,14 +409,18 @@ class BasicPlayerApp {
     demoFluentAPI() {
         if (this.player && this.streamUrlInput.value.trim()) {
             this.logEvent('🔗 Demonstrating fluent API chaining...');
-            
+
             // Example of fluent API usage
             this.player
                 .setVolume(0.5)
                 .play()
                 .setVolume(0.8);
-                
+
             this.logEvent('✅ Fluent API chain: setVolume(0.5) → play() → setVolume(0.8)');
+
+            // Showcase getState() for a full snapshot
+            const state = this.player.getState();
+            this.logEvent(`📊 Player state: volume=${state.volume}, isPlaying=${state.isPlaying}, loading=${state.loading}`);
         }
     }
 
@@ -519,9 +517,7 @@ class BasicPlayerApp {
         if (!this.player || !this.scrubber || this.scrubber.disabled) return;
         this.isScrubbing = true;
         this.pendingSeekTime = parseFloat(this.scrubber.value) || 0;
-        if (typeof this.player.beginSeek === 'function') {
-            this.player.beginSeek();
-        }
+        this.player.beginSeek();
     }
 
     previewSeek(value) {
@@ -542,15 +538,10 @@ class BasicPlayerApp {
         this.isScrubbing = false;
         const finalTime = this.pendingSeekTime;
         this.pendingSeekTime = null;
-        if (typeof this.player.updateSeek === 'function' && typeof finalTime === 'number') {
+        if (typeof finalTime === 'number') {
             this.player.updateSeek(finalTime);
         }
-        if (typeof this.player.commitSeek === 'function') {
-            const result = this.player.commitSeek();
-            if (result && typeof result.catch === 'function') {
-                result.catch(() => {});
-            }
-        }
+        this.player.commitSeek();
     }
 
     retry() {
@@ -719,9 +710,10 @@ class BasicPlayerApp {
                 this.logEvent(`❌ Unknown error: ${error.message}`, 'error');
         }
 
-        // Show player state for debugging
+        // Show player state for debugging using getState()
         if (this.player) {
-            this.logEvent(`🔍 Player state: loading=${this.player.loading}, readyState=${this.player.readyState}`);
+            const state = this.player.getState();
+            this.logEvent(`🔍 Player state: loading=${state.loading}, readyState=${state.readyState}, isPlaying=${state.isPlaying}`);
         }
     }
 

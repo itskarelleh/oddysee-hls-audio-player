@@ -9,7 +9,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useHlsAudioPlayer } from "../../../packages/oddysee/react/src/use-hls-audio-player";
+import { useHlsAudioPlayer } from "oddysee-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,

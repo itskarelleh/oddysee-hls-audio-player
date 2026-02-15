@@ -1,5 +1,5 @@
 # Oddysee TypeScript
-Low-level, strongly-typed audio player built on top of [hls.js](https://github.com/video-dev/hls.js), focused on audio streaming. This package does **not** depend on React – it just gives you a clean class API you can wire into any UI.
+Low-level, strongly-typed audio player built on top of [hls.js](https://github.com/video-dev/hls.js), focused on audio streaming.
 
 ## ⚠️ Status: Beta
 Oddysee is actively evolving. APIs may change, and breaking changes can occur between minor releases.
@@ -160,6 +160,48 @@ player.setQuality(levels[0].id);
 
 // Or by name ('low' | 'medium' | 'high')
 player.setQuality('high');
+
+// Retry on network failure
+// Uses the retryCount from config by default, or override per call
+player.retry();              // retry with current config
+player.retry(3, 2000);       // retry up to 3 times, 2s apart
+```
+
+## Deferred seeking
+
+Oddysee uses a three-phase seek model that separates the user's scrubbing gesture from the actual media seek. This prevents audio glitches during fast scrubbing and lets you show a live preview in your UI without hammering the media pipeline.
+
+| Method | Purpose |
+|---|---|
+| `beginSeek()` | Signals the start of a seek gesture. The player pauses time-update processing so the scrubber won't fight the user's thumb. |
+| `updateSeek(time)` | Updates the preview position (can be called many times while the user drags). The audio element's `currentTime` is moved for visual feedback, but no real seek is committed yet. |
+| `commitSeek()` | Finalises the seek: pauses playback, jumps to the last previewed time, and resumes. Safe to `await` — it resolves once playback has restarted at the new position. |
+
+### Wiring up an `<input type="range">` scrubber
+
+```js
+const scrubber = document.getElementById('scrubber');
+
+scrubber.addEventListener('mousedown', () => {
+  player.beginSeek();
+});
+
+scrubber.addEventListener('input', (e) => {
+  player.updateSeek(parseFloat(e.target.value));
+});
+
+scrubber.addEventListener('mouseup', () => {
+  player.commitSeek();
+});
+```
+
+### Programmatic seek (skip forward 10 s)
+
+```js
+const state = player.getState();
+player.beginSeek();
+player.updateSeek(state.currentTime + 10);
+player.commitSeek();
 ```
 
 ## Accessing the underlying `<audio>` element

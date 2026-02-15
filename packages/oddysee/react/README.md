@@ -80,6 +80,16 @@ interface UseHlsAudioPlayerResult {
     pause: () => void;
     setVolume: (volume: number) => void;
     setCurrentTime: (time: number) => void;
+    beginSeek: () => void;
+    updateSeek: (time: number) => void;
+    commitSeek: () => void;
+  };
+  scrub: {
+    isScrubbing: boolean;
+    displayTime: number;
+    begin: () => void;
+    update: (time: number) => void;
+    commit: (time?: number) => void;
   };
 }
 ```
@@ -182,6 +192,54 @@ export default function BasicPlayer() {
     </div>
   );
 }
+```
+
+### Deferred Seeking (Scrubber)
+
+The hook provides a `scrub` object that wraps the three-phase seek model (`beginSeek` / `updateSeek` / `commitSeek`). This separates the user's drag gesture from the actual media seek so audio doesn't glitch while scrubbing.
+
+```tsx
+import { useHlsAudioPlayer } from 'oddysee-react';
+
+export default function ScrubberPlayer() {
+  const { state, controls, scrub, isPlaying } = useHlsAudioPlayer({
+    src: { url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+  });
+
+  return (
+    <div className="player">
+      <button onClick={() => isPlaying ? controls.pause() : controls.play()}>
+        {isPlaying ? 'Pause' : 'Play'}
+      </button>
+
+      <input
+        type="range"
+        min={0}
+        max={state.duration ?? 0}
+        value={scrub.displayTime}
+        onMouseDown={() => scrub.begin()}
+        onTouchStart={() => scrub.begin()}
+        onChange={(e) => scrub.update(parseFloat(e.target.value))}
+        onMouseUp={() => scrub.commit()}
+        onTouchEnd={() => scrub.commit()}
+      />
+      <span>
+        {scrub.displayTime.toFixed(0)}s / {state.duration?.toFixed(0) ?? '--'}s
+      </span>
+    </div>
+  );
+}
+```
+
+`scrub.displayTime` automatically switches between the live scrub position (while dragging) and `state.currentTime` (during normal playback), so your UI stays in sync without any extra logic.
+
+You can also call the low-level methods directly via `controls`:
+
+```tsx
+// Programmatic skip forward 10s
+controls.beginSeek();
+controls.updateSeek(state.currentTime + 10);
+controls.commitSeek();
 ```
 
 ### Playlist Player
@@ -337,6 +395,7 @@ export default function EventHandlingPlayer() {
   );
 }
 ```
+
 
 ## Features
 
