@@ -1,6 +1,6 @@
 {
   "name": "oddysee-typescript",
-  "version": "0.2.0-canary.3",
+  "version": "0.2.0",
   "description": "A simple HLS audio player that wraps verbose HLS.js complexity into intuitive audio controls",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
