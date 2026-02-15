@@ -7,11 +7,12 @@ Oddysee is actively evolving. APIs may change, and breaking changes can occur be
 ## Background
 I built this because I needed an audio player that supported HLS, but all the solutions I came across were either bloated or not maintained. 
 Then I discovered HLS.js. It saved me but it wasn't easy! The developer experience feels like you're configuring a spaceship when all you want to do is play some music.
+
 This library wraps all that complexity into a simple, audio-focused API that actually makes sense.
 
 ## Packages
 
-- **[oddysee-typescript](./packages/oddysee/core/README.md)** - Core player library (framework-agnostic)
+- **[oddysee-typescript](./packages/oddysee/typescript/README.md)** - Core player library (framework-agnostic)
 - **[oddysee-react](./packages/oddysee/react/README.md)** - React hooks wrapper
 
 ## Installation
@@ -19,11 +20,19 @@ This library wraps all that complexity into a simple, audio-focused API that act
 ### Core (Vanilla JS, or any framework)
 ```bash
 npm install oddysee-typescript
+# or
+yarn add oddysee-typescript
+# or
+pnpm add oddysee-typescript
 ```
 
 ### React Hook
 ```bash
 npm install oddysee-react
+# or
+yarn add oddysee-react
+# or
+pnpm add oddysee-react
 ```
 
 ## Quick Start
@@ -87,6 +96,8 @@ const player = new HLSAudioPlayer({
 📊 **Event system** - Track playback state with clean, typed events
 
 ⚡ **Framework agnostic** - Works with React, Vue, Svelte, or vanilla JS
+
+🔄 **Session lifecycle** - Auto-recovers stale streams after idle periods and handles expired auth tokens (401/403)
 
 🛡️ **TypeScript ready** - Fully typed for autocomplete happiness
 
