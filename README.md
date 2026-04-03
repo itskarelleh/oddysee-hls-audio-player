@@ -1,6 +1,8 @@
 # Oddysee - HLS Audio Player
 A library API that wraps around HLS.js for a better developer experience. Because audio streaming shouldn't require a PhD in streaming protocols.
 
+Powering audio streaming at <a href="https://zillinity.app">Zillinity</a>: a soft luxury wellness app.
+
 ## ⚠️ Status: Beta
 Oddysee is actively evolving. APIs may change, and breaking changes can occur between minor releases.
 
