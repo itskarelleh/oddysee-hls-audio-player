@@ -8,10 +8,15 @@ We build an **elegant API that wraps verbose HLS.js complexity**. Every contribu
 We expect all contributors to read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Getting Started
+Browse the <a href="https://github.com/itskarelleh/oddysee-hls-audio-player/issues>Issues</a> to find an open issue with labels like 'help wanted' or 'good first issue'. To express interest in an issue, simply add a comment, "I would like to be assigned to this issue." 
+
+Once you have the OK to work on the issue, you can then do the following:
+
 1. Fork the repository
 2. Create a feature branch
 3. Follow our API patterns and/or the suggestions and steps provided by the issue assigned to you. 
 4. Submit a pull request
+
 
 ## Core Principles
 
