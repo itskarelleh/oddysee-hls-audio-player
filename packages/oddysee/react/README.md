@@ -193,7 +193,50 @@ export default function BasicPlayer() {
   );
 }
 ```
+### Seek Helpers
 
+Use the seek helpers when you need to move playback programmatically, such as skip forward/backward buttons or custom seek controls.
+
+```tsx
+
+```
+import { useHlsAudioPlayer } from 'oddysee-react';
+
+export default function SeekControls() {
+  const { state, controls, isLoading } = useHlsAudioPlayer({
+    src: { url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+  });
+
+  const seekBy = (seconds: number) => {
+    const duration = state.duration ?? 0;
+    const nextTime = Math.min(
+      Math.max(state.currentTime + seconds, 0),
+      duration
+    );
+
+    controls.beginSeek();
+    controls.updateSeek(nextTime);
+    controls.commitSeek();
+  };
+
+  return (
+    <div className="seek-controls">
+      <button onClick={() => seekBy(-10)} disabled={isLoading}>
+        Back 10s
+      </button>
+
+      <span>
+        {state.currentTime.toFixed(0)}s / {state.duration?.toFixed(0) ?? '--'}s
+      </span>
+
+      <button onClick={() => seekBy(10)} disabled={isLoading}>
+        Forward 10s
+      </button>
+    </div>
+  );
+}
+
+```tsx
 ### Deferred Seeking (Scrubber)
 
 The hook provides a `scrub` object that wraps the three-phase seek model (`beginSeek` / `updateSeek` / `commitSeek`). This separates the user's drag gesture from the actual media seek so audio doesn't glitch while scrubbing.
