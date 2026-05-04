@@ -198,8 +198,6 @@ export default function BasicPlayer() {
 Use the seek helpers when you need to move playback programmatically, such as skip forward/backward buttons or custom seek controls.
 
 ```tsx
-
-```
 import { useHlsAudioPlayer } from 'oddysee-react';
 
 export default function SeekControls() {
@@ -235,7 +233,9 @@ export default function SeekControls() {
     </div>
   );
 }
+```
 
+For simple one-off seeks, you can also use `controls.setCurrentTime(time)`. The `beginSeek`, `updateSeek`, and `commitSeek` helpers are useful when you want to coordinate a seek flow manually.
 ```tsx
 ### Deferred Seeking (Scrubber)
 
