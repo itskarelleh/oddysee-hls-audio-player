@@ -236,7 +236,7 @@ export default function SeekControls() {
 ```
 
 For simple one-off seeks, you can also use `controls.setCurrentTime(time)`. The `beginSeek`, `updateSeek`, and `commitSeek` helpers are useful when you want to coordinate a seek flow manually.
-```tsx
+
 ### Deferred Seeking (Scrubber)
 
 The hook provides a `scrub` object that wraps the three-phase seek model (`beginSeek` / `updateSeek` / `commitSeek`). This separates the user's drag gesture from the actual media seek so audio doesn't glitch while scrubbing.
