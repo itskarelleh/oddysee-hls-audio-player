@@ -235,7 +235,7 @@ export default function SeekControls() {
 }
 ```
 
-For simple one-off seeks, u can also use `controls.setCurrentTime(time)`. The `beginSeek`, `updateSeek`, and `commitSeek` helpers are useful when you want to coordinate a seek flow manually.
+For simple one-off seeks, you can also use `controls.setCurrentTime(time)`. The `beginSeek`, `updateSeek`, and `commitSeek` helpers are useful when you want to coordinate a seek flow manually.
 
 ### Deferred Seeking (Scrubber)
 
