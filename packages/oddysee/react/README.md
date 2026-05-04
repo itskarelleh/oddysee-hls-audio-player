@@ -193,6 +193,7 @@ export default function BasicPlayer() {
   );
 }
 ```
+For simple one-off seeks, you can also use `controls.setCurrentTime(time)`. The `beginSeek`, `updateSeek`, and `commitSeek` helpers are useful when you want to coordinate a seek flow manually.
 
 ### Deferred Seeking (Scrubber)
 
