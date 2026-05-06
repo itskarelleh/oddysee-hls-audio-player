@@ -27,6 +27,16 @@ vi.mock('hls.js', () => {
             }
             this.handlers[event].push(handler);
         });
+        once = vi.fn((event: string, handler: (event: string, data: any) => void) => {
+            const wrapper = (e: string, data: any) => {
+                handler(e, data);
+                this.handlers[event] = this.handlers[event].filter(h => h !== wrapper);
+            };
+            if (!this.handlers[event]) {
+                this.handlers[event] = [];
+            }
+            this.handlers[event].push(wrapper);
+        });
         attachMedia = vi.fn();
         loadSource = vi.fn(() => {
             this.trigger('MANIFEST_PARSED', {});

@@ -480,7 +480,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             this.setupHlsEvents();
             this.hls.attachMedia(this.audioElement);
 
-            this.hls.on(HLS.Events.MANIFEST_PARSED, () => {
+            this.hls.once(HLS.Events.MANIFEST_PARSED, () => {
                 manifestParsed = true;
                 if (typeof startTime === 'number' && startTime > 0) {
                     this.audioElement.currentTime = startTime;
@@ -488,18 +488,26 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
                 resolve(this);
             });
 
-            this.hls.on(HLS.Events.ERROR, (event, data) => {
-                if (manifestParsed) {
-                    return;
-                }
-                const normalized = this.normalizeHlsErrorData(data);
-                if (!normalized) {
-                    return;
-                }
-                this._loading = false;
-                this._error = this.mapHlsError(normalized);
-                reject(this._error);
-            });
+            // this.hls.on(HLS.Events.MANIFEST_PARSED, () => {
+            //     manifestParsed = true;
+            //     if (typeof startTime === 'number' && startTime > 0) {
+            //         this.audioElement.currentTime = startTime;
+            //     }
+            //     resolve(this);
+            // });
+
+            // this.hls.on(HLS.Events.ERROR, (event, data) => {
+            //     if (manifestParsed) {
+            //         return;
+            //     }
+            //     const normalized = this.normalizeHlsErrorData(data);
+            //     if (!normalized) {
+            //         return;
+            //     }
+            //     this._loading = false;
+            //     this._error = this.mapHlsError(normalized);
+            //     reject(this._error);
+            // });
 
             this.hls.loadSource(url);
             this.currentTrack = {
