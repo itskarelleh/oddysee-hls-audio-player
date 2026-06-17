@@ -4,7 +4,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.2.0",
+  "version": "0.2.0-canary.4",
   "type": "module",
   "author": "Karelle Hofler",
   "main": "dist/index.js",
@@ -21,8 +21,8 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --tsconfig tsconfig.lib.json",
-    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "build": "tsup src/index.ts --format esm,cjs --dts --tsconfig tsconfig.lib.json --external hls.js --external oddysee-typescript",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch --external hls.js --external oddysee-typescript",
     "lint": "eslint .",
     "test": "vitest",
     "preview": "vite preview",
@@ -30,7 +30,7 @@
     "pub:test": "npm run build && npm publish --tag test"
   },
   "dependencies": {
-    "oddysee-typescript": "^0.2.0",
+    "oddysee-typescript": "^0.2.0-canary.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

@@ -19,8 +19,7 @@ import {
   type Track,
   type QualityLevel,
   type PlayerState
-} 
-from 'oddysee-typescript'
+} from 'oddysee-typescript'
 
 // Local mirror of the core's PlayerEventMap so we don't depend on it being exported
 export type PlayerEventMap = {
