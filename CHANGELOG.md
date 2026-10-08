@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.3.0 (2026-10-08)
+
+### New Features
+
+- **Recovering state** — While a stale or expired signed HLS session is rebuilt, the player keeps reporting the last stable playback time and duration instead of the audio element's temporary reset to `0:00`. Covers both stale resume and 401/403 recovery (#42)
+- **`isRecovering`** — New getter on the player and field on `PlayerState`, so UIs can show a reconnecting indicator instead of treating recovery as a new track load
+- **`recovery-start` / `recovery-end` events** — Recovery lifecycle events, each with the `{ currentTime }` being preserved
+
+### React (`oddysee-react`)
+
+- **`isRecovering`** — Returned from the hook and available on `state.isRecovering`
+- **`on['recovery-start']` / `on['recovery-end']`** — Recovery events accepted in the hook's `on` option
+
+### Breaking Changes
+
+- `isRecovering` is a required member of `PlayerState` and `HLSAudioPlayerInterface`. Code that builds these types by hand (mocks, custom implementations) needs to add it. Runtime behaviour of existing APIs is unchanged.
+
+### Documentation
+
+- Documented the recovering state and recovery events in both TypeScript and React READMEs
+
 ## 0.2.0 (2026-02-15)
 
 ### New Features
