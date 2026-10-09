@@ -233,6 +233,54 @@ describe('recovery state', () => {
         expect(onEnd).toHaveBeenCalledTimes(1);
     });
 
+    it('ends recovery when playback is rejected after the refresh', async () => {
+        const { player, audio } = await setupStalePlayer();
+        const onEnd = vi.fn();
+        player.on('recovery-end', onEnd);
+        player.on('error', () => {});
+        audio.play.mockRejectedValueOnce(new Error('NotAllowedError'));
+
+        await expect(player.playAsync()).rejects.toMatchObject({ code: 'PLAYBACK_ERROR' });
+
+        expect(player.isRecovering).toBe(false);
+        expect(onEnd).toHaveBeenCalledWith({ currentTime: 42 });
+    });
+
+    it('stays recovering when a reload aborts a pending play', async () => {
+        const player = new HLSAudioPlayer({ playback: { staleAfterMs: 60000 } });
+        player.on('error', () => {});
+        await player.setSource('https://example.com/stream.m3u8');
+        const audio = player.getAudioElement() as unknown as MockAudio;
+        audio.currentTime = 33;
+
+        let rejectPlay: (error: Error) => void = () => {};
+        audio.play.mockImplementationOnce(() => {
+            audio.paused = false;
+            return new Promise((_, reject) => {
+                rejectPlay = reject;
+            });
+        });
+        const playPromise = player.playAsync();
+
+        // Expired segment: the reload pauses the element, aborting the pending play()
+        autoParseManifest = false;
+        lastInstance.trigger('ERROR', {
+            type: 'NETWORK_ERROR',
+            response: { code: 403 },
+        });
+        rejectPlay(new Error('AbortError'));
+        await expect(playPromise).rejects.toMatchObject({ code: 'PLAYBACK_ERROR' });
+
+        expect(player.isRecovering).toBe(true);
+        expect(player.getState().currentTime).toBe(33);
+
+        lastInstance.trigger('MANIFEST_PARSED', {});
+        await Promise.resolve();
+        await Promise.resolve();
+        audio.trigger('canplay');
+        expect(player.isRecovering).toBe(false);
+    });
+
     it('ends recovery when a different source is loaded', async () => {
         const { player } = await setupStalePlayer();
         const onEnd = vi.fn();

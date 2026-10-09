@@ -73,6 +73,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private lastStableTime: number = 0;
     private lastStableDuration: number | null = null;
     private recoveryReloadPending: boolean = false;
+    private recoveryReloadInFlight: boolean = false;
 
     get loading(): boolean {
         return this._loading;
@@ -322,11 +323,14 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
         this.staleMedia = false;
         this.recoveryReloadPending = true;
+        this.recoveryReloadInFlight = true;
         try {
             await this.setSource(this.currentTrack.url, sourceOptions);
         } catch (error) {
             this.endRecovery();
             throw error;
+        } finally {
+            this.recoveryReloadInFlight = false;
         }
     }
 
@@ -424,6 +428,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         } catch (error) {
             const mappedError = this.mapHlsError(data);
             this._error = mappedError;
+            this.endRecovery();
             this.emit('error', mappedError);
         } finally {
             this.authRecoveryInFlight = false;
@@ -603,6 +608,10 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         } catch (error: any) {
             this.resumeRequested = false;
             this._isPlaying = false;
+            // A reload still in flight aborts the pending play(); that recovery is ongoing
+            if (!this.recoveryReloadInFlight) {
+                this.endRecovery();
+            }
             this._error = {
                 code: 'PLAYBACK_ERROR',
                 message: (error && error.message) || 'Playback failed',
