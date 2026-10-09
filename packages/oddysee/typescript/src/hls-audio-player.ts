@@ -38,6 +38,7 @@ export interface HLSAudioPlayerInterface {
 	loading: boolean;
 	readyState: number;
 	error: PlayerError | null;
+	isRecovering: boolean;
 
 	destroy(): void;
 }
@@ -68,6 +69,11 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
     private authRecoveryInFlight: boolean = false;
     private lastAuthRecoveryAt: number | null = null;
     private authRecoveryCooldownMs: number = 2000;
+    private _isRecovering: boolean = false;
+    private lastStableTime: number = 0;
+    private lastStableDuration: number | null = null;
+    private recoveryReloadPending: boolean = false;
+    private recoveryReloadInFlight: boolean = false;
 
     get loading(): boolean {
         return this._loading;
@@ -83,6 +89,10 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
     get isPlaying(): boolean {
         return this._isPlaying;
+    }
+
+    get isRecovering(): boolean {
+        return this._isRecovering;
     }
 
     constructor(config: PlayerConfig = {}) {
@@ -187,6 +197,9 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
                 return;
             }
             const error = this.mapHlsError(normalized);
+            if (normalized.fatal) {
+                this.endRecovery();
+            }
             this.emit('error', error);
         });
 
@@ -223,6 +236,14 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         this.audioElement.addEventListener('timeupdate', () => {
             this.updateCurrentTrack();
             this.markActivity();
+            if (this._isRecovering) {
+                // The element reports 0 / NaN while the session is rebuilt
+                this.emit('timeupdate', {
+                    currentTime: this.lastStableTime,
+                    duration: this.lastStableDuration,
+                });
+                return;
+            }
             this.emit('timeupdate', {
                 currentTime: this.audioElement.currentTime,
                 duration: isNaN(this.audioElement.duration)
@@ -234,6 +255,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             this._loading = false;
             this.staleMedia = false;
             this.markActivity();
+            this.endRecovery();
             this.emit('canplay', undefined);
         });
 
@@ -293,14 +315,44 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
     private async refreshSourceForResume(): Promise<void> {
         if (!this.currentTrack) return;
-        const resumeTime = this.audioElement.currentTime;
+        this.beginRecovery();
         const sourceOptions: SourceOptions = {
             ...this.currentTrack,
-            startTime: resumeTime,
+            startTime: this.lastStableTime,
         };
 
         this.staleMedia = false;
-        await this.setSource(this.currentTrack.url, sourceOptions);
+        this.recoveryReloadPending = true;
+        this.recoveryReloadInFlight = true;
+        try {
+            await this.setSource(this.currentTrack.url, sourceOptions);
+        } catch (error) {
+            this.endRecovery();
+            throw error;
+        } finally {
+            this.recoveryReloadInFlight = false;
+        }
+    }
+
+    private beginRecovery(): void {
+        if (this._isRecovering) return;
+        const duration = this.audioElement.duration;
+        this.lastStableTime = this.audioElement.currentTime;
+        this.lastStableDuration =
+            typeof duration === 'number' && isFinite(duration)
+                ? duration
+                : this.currentTrack?.duration ?? null;
+        this._isRecovering = true;
+        this.emit('recovery-start', { currentTime: this.lastStableTime });
+    }
+
+    private endRecovery(): void {
+        if (!this._isRecovering) return;
+        this._isRecovering = false;
+        this.updateCurrentTrack();
+        this.emit('recovery-end', {
+            currentTime: this.currentTrack?.currentTime ?? this.lastStableTime,
+        });
     }
 
     private extractResponseCode(data: Record<string, any>): number | null {
@@ -355,6 +407,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         ) {
             const error = this.mapHlsError(data);
             this._error = error;
+            this.endRecovery();
             this.emit('error', error);
             return;
         }
@@ -375,6 +428,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         } catch (error) {
             const mappedError = this.mapHlsError(data);
             this._error = mappedError;
+            this.endRecovery();
             this.emit('error', mappedError);
         } finally {
             this.authRecoveryInFlight = false;
@@ -383,6 +437,14 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
 
     private updateCurrentTrack(): void {
         if (this.currentTrack) {
+            if (this._isRecovering) {
+                // Keep the last stable position while the audio element is reset
+                this.currentTrack.currentTime = this.lastStableTime;
+                if (this.lastStableDuration !== null) {
+                    this.currentTrack.duration = this.lastStableDuration;
+                }
+                return;
+            }
             this.currentTrack.currentTime = this.audioElement.currentTime;
             const duration = this.audioElement.duration;
             if (typeof duration === 'number' && isFinite(duration)) {
@@ -439,6 +501,12 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
      * @returns 
      */
     async setSource(url: string, options?: SourceOptions): Promise<HLSAudioPlayer> {
+        // A source change that isn't the recovery reload means a new track
+        if (this.recoveryReloadPending) {
+            this.recoveryReloadPending = false;
+        } else {
+            this.endRecovery();
+        }
         this._loading = true;
         this._error = null;
         this.staleMedia = false;
@@ -540,6 +608,10 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         } catch (error: any) {
             this.resumeRequested = false;
             this._isPlaying = false;
+            // A reload still in flight aborts the pending play(); that recovery is ongoing
+            if (!this.recoveryReloadInFlight) {
+                this.endRecovery();
+            }
             this._error = {
                 code: 'PLAYBACK_ERROR',
                 message: (error && error.message) || 'Playback failed',
@@ -596,6 +668,7 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
             error: this.error,
             readyState: this.readyState,
             isPlaying: this.isPlaying,
+            isRecovering: this.isRecovering,
         };
     }
 
@@ -687,5 +760,6 @@ export class HLSAudioPlayer implements HLSAudioPlayerInterface {
         this._loading = false;
         this._error = null;
         this._isPlaying = false;
+        this._isRecovering = false;
     }
 }

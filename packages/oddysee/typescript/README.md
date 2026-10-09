@@ -90,6 +90,7 @@ Events are strongly typed. Available events:
 - `loading`, `canplay`, `playlist-ready`
 - `loadedmetadata`, `timeupdate`
 - `quality-change`, `error`
+- `recovery-start`, `recovery-end`
 
 ```ts
 // Time updates (progress bar, elapsed time)
@@ -112,6 +113,14 @@ player.on('quality-change', (quality) => {
   console.log('quality:', quality.name, quality.bitrate);
 });
 
+// Session recovery (stale stream / expired token being refreshed)
+player.on('recovery-start', ({ currentTime }) => {
+  console.log('reconnecting at', currentTime);
+});
+player.on('recovery-end', ({ currentTime }) => {
+  console.log('reconnected at', currentTime);
+});
+
 // Unsubscribe
 const onPause = () => console.log('paused');
 player.on('pause', onPause);
@@ -132,7 +141,10 @@ console.log(state.volume);      // 0–1
 console.log(state.loading);     // boolean
 console.log(state.error);       // PlayerError | null
 console.log(state.readyState);  // HTMLMediaElement.readyState
+console.log(state.isRecovering); // true while a session is being re-established
 ```
+
+While `isRecovering` is `true` the player is rebuilding the HLS session (after a long pause or a 401/403 on a signed stream). `currentTime` and `duration` in `getState()` and `timeupdate` stay frozen at the last stable values instead of following the audio element's temporary reset to `0`, so you can show a "reconnecting" indicator without the timer jumping.
 
 You can still call `getCurrentTrack()` directly if you only care about the track:
 

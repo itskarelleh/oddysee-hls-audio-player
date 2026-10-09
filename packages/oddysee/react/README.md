@@ -69,6 +69,7 @@ interface UseHlsAudioPlayerResult {
   player: HLSAudioPlayerInterface | null;
   state: PlayerState;
   isPlaying: boolean;
+  isRecovering: boolean;
   duration: number;
   isLoading: boolean;
   loading: boolean;
@@ -106,7 +107,17 @@ interface PlayerState {
   error: PlayerError | null;
   readyState: number;
   isPlaying: boolean;
+  isRecovering: boolean;
 }
+```
+
+`isRecovering` is `true` while the player re-establishes a session (after a long pause or an expired token). `state.currentTime` and `state.duration` hold their last stable values during that window, so render a reconnecting indicator rather than treating it as a new track load:
+
+```tsx
+const { state, isRecovering, isLoading } = useHlsAudioPlayer({ src });
+
+<span>{isRecovering ? 'Reconnecting…' : isLoading ? 'Loading…' : null}</span>
+<span>{formatTime(state.currentTime)}</span>
 ```
 
 ### Configuration Types

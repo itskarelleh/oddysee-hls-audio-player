@@ -33,6 +33,8 @@ export type PlayerEventMap = {
   timeupdate: { currentTime: number; duration: number | null }
   loading: void
   canplay: void
+  'recovery-start': { currentTime: number }
+  'recovery-end': { currentTime: number }
 }
 
 export interface UseHlsAudioPlayerOptions {
@@ -48,6 +50,7 @@ export interface UseHlsAudioPlayerResult {
   player: HLSAudioPlayerInterface | null
   state: PlayerState
   isPlaying: boolean
+  isRecovering: boolean
   duration: number
   isLoading: boolean
   loading: boolean
@@ -100,6 +103,7 @@ const defaultState: PlayerState = {
   error: null,
   readyState: 0,
   isPlaying: false,
+  isRecovering: false,
 }
 
 export function useHlsAudioPlayer(
@@ -123,6 +127,7 @@ export function useHlsAudioPlayer(
   const [error, setError] = useState<PlayerError | null>(player?.error ?? null)
   const [readyState, setReadyState] = useState<number>(player?.readyState ?? 0)
   const [isPlaying, setIsPlaying] = useState<boolean>(player?.isPlaying ?? false)
+  const [isRecovering, setIsRecovering] = useState<boolean>(player?.isRecovering ?? false)
   const [duration, setDuration] = useState<number>(player?.getState()?.duration ?? 0)
   const [isLoading, setIsLoading] = useState<boolean>(player?.loading ?? false)
   const [isScrubbing, setIsScrubbing] = useState(false)
@@ -139,6 +144,7 @@ export function useHlsAudioPlayer(
       setError(next.error)
       setReadyState(next.readyState)
       setIsPlaying(next.isPlaying)
+      setIsRecovering(next.isRecovering)
       setDuration(next.duration ?? 0)
       setIsLoading(next.loading)
     }
@@ -183,6 +189,14 @@ export function useHlsAudioPlayer(
       canplay: data => {
         handleStateChange()
         on?.canplay?.(data as PlayerEventMap['canplay'])
+      },
+      'recovery-start': data => {
+        handleStateChange()
+        on?.['recovery-start']?.(data as PlayerEventMap['recovery-start'])
+      },
+      'recovery-end': data => {
+        handleStateChange()
+        on?.['recovery-end']?.(data as PlayerEventMap['recovery-end'])
       },
     }
 
@@ -335,6 +349,7 @@ export function useHlsAudioPlayer(
     player,
     state,
     isPlaying,
+    isRecovering,
     duration,
     isLoading,
     loading,

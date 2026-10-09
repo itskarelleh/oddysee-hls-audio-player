@@ -40,6 +40,7 @@ export interface PlayerState {
   error: PlayerError | null;
   readyState: number;
   isPlaying: boolean;
+  isRecovering: boolean;
 }
 
 export interface QualityLevel {
@@ -59,7 +60,9 @@ export type PlayerEvent =
   | 'loadedmetadata'
   | 'timeupdate'
   | 'loading'
-  | 'canplay';
+  | 'canplay'
+  | 'recovery-start'
+  | 'recovery-end';
 
 export interface PlayerEventMap {
   play: void;
@@ -72,6 +75,8 @@ export interface PlayerEventMap {
   timeupdate: { currentTime: number; duration: number | null };
   loading: void;
   canplay: void;
+  'recovery-start': { currentTime: number };
+  'recovery-end': { currentTime: number };
 }
 
 export interface PlayerError {
